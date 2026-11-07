@@ -66,6 +66,20 @@ td.m{font-weight:700;font-variant-numeric:tabular-nums}
 .out div{background:var(--panel2);border-radius:9px;padding:10px}
 .out b{display:block;font-size:20px;font-variant-numeric:tabular-nums}
 .note{border-left:3px solid var(--warn);padding:8px 10px;background:var(--panel2);border-radius:6px;font-size:13px;color:var(--mute)}
+.cbtn{flex:none;width:38px;height:38px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);color:var(--blue);display:grid;place-items:center;padding:0}
+.cbtn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8}
+td .tk{background:none;border:0;color:var(--ink);font:inherit;font-weight:700;padding:0;text-decoration:underline dotted var(--mute);text-underline-offset:3px}
+#chartSheet{position:fixed;inset:0;z-index:30;background:var(--bg);display:none;flex-direction:column;padding-top:env(safe-area-inset-top)}
+#chartSheet.on{display:flex}
+.ch-top{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line)}
+.ch-top b{font-size:17px;margin-right:auto}
+.ch-top .x{background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:10px;width:38px;height:38px;font-size:20px}
+.ch-iv{display:flex;gap:6px;padding:8px 12px;overflow-x:auto}
+#chartBox{flex:1;min-height:0;position:relative}
+#chartBox .tradingview-widget-container{position:absolute;inset:0;z-index:1}
+#chartBox .ld{position:absolute;inset:0;display:grid;place-items:center;color:var(--mute);font-size:13px}
+.ch-links{display:flex;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));border-top:1px solid var(--line)}
+.ch-links a{flex:1;text-align:center;background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:10px;padding:10px 4px;text-decoration:none;font-size:13px}
 .toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--line);padding:9px 14px;border-radius:20px;font-size:13px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:20}
 .toast.on{opacity:1}
 </style>
@@ -160,6 +174,23 @@ td.m{font-weight:700;font-variant-numeric:tabular-nums}
 </nav>
 <div class="toast" id="toast"></div>
 
+<div id="chartSheet" role="dialog" aria-label="Chart">
+  <div class="ch-top"><b id="chSym">–</b><button class="x" id="chClose" aria-label="Close">×</button></div>
+  <div class="ch-iv" id="chIv">
+    <button class="chip" data-iv="5">5m</button>
+    <button class="chip" data-iv="60">1h</button>
+    <button class="chip on" data-iv="D">1D</button>
+    <button class="chip" data-iv="W">1W</button>
+    <button class="chip" data-iv="M">1M</button>
+  </div>
+  <div id="chartBox"></div>
+  <div class="ch-links">
+    <a id="lTv" target="_blank" rel="noopener">TradingView</a>
+    <a id="lYh" target="_blank" rel="noopener">Yahoo</a>
+    <a id="lFv" target="_blank" rel="noopener">Finviz</a>
+  </div>
+</div>
+
 <script>
 /* ---------- storage helpers ---------- */
 const LS = {
@@ -207,7 +238,7 @@ function renderEtf(){
     rows.forEach(r => {
       const cls = r[1]>0 ? 'bull' : 'bear';
       const lbl = r[2] ? ` <span class="tag">${r[2]}</span>` : '';
-      html += `<tr><td><b>${r[0]}</b>${lbl}</td><td class="m ${cls}">${fmtMult(r[1])}</td><td class="${cls}">≈ ${r[1]>0?'+':''}${r[1]}%</td></tr>`;
+      html += `<tr><td><button class="tk" data-chart="${r[0]}">${r[0]}</button>${lbl}</td><td class="m ${cls}">${fmtMult(r[1])}</td><td class="${cls}">≈ ${r[1]>0?'+':''}${r[1]}%</td></tr>`;
     });
     html += '</table></div>';
   });
@@ -353,11 +384,12 @@ function renderResults(){
       <div class="score" style="border-color:${scoreColor(r.score)}">${r.score ?? '–'}</div>
       <div><div class="t">${i+1}. ${r.t}</div><div class="s">${capFmt(m.marketCapitalization)} · 6M ${pct(m['26WeekPriceReturnDaily'])} · Rev ${pct(m.revenueGrowthTTMYoy)}</div></div>
       <div class="r"><div>$${(+r.price).toFixed(2)}</div><div class="${r.dp>=0?'up':'dn'}" style="font-size:12.5px">${pct(r.dp)}</div></div>
+      ${chartBtn(r.t)}
     </div><div class="detail" id="d-${r.t}">${detailHtml(r)}</div>`;
   });
   lev.forEach(r => {
     h += `<div class="res"><div class="score" style="border-color:var(--warn);font-size:12px">${fmtMult(r.lev.mult)}</div>
-      <div><div class="t">${r.t}<span class="tag lev">leveraged</span></div><div class="s">Tracks ${r.lev.base} · not ranked</div></div></div>`;
+      <div><div class="t">${r.t}<span class="tag lev">leveraged</span></div><div class="s">Tracks ${r.lev.base} · not ranked</div></div><span style="margin-left:auto"></span>${chartBtn(r.t)}</div>`;
   });
   bad.forEach(r => { h += `<div class="res"><div class="score">?</div><div><div class="t">${r.t}</div><div class="s">${r.err}</div></div></div>`; });
   $('#results').innerHTML = h;
@@ -368,6 +400,66 @@ function detailHtml(r){
   const f = v => v==null ? '–' : (+v).toFixed(2);
   return `${bars}<div class="muted" style="margin-top:8px">52w ${f(m['52WeekLow'])} – ${f(m['52WeekHigh'])} · β ${f(m.beta)} · 3M ${pct(m['13WeekPriceReturnDaily'])} · EPS gr ${pct(m.epsGrowthTTMYoy)} · P/S ${f(m.psTTM)}</div>`;
 }
+/* ---------- charts ---------- */
+// Tickers TradingView would otherwise resolve to the wrong instrument (e.g. USD = currency)
+const TV_FIX = {USD:'AMEX:USD', SH:'AMEX:SH', DOG:'AMEX:DOG', ROM:'AMEX:ROM', UBT:'AMEX:UBT', UGL:'AMEX:UGL', GLL:'AMEX:GLL'};
+const tvSym = t => TV_FIX[t] || t;
+function chartBtn(t){
+  return `<button class="cbtn" data-chart="${t}" aria-label="Chart ${t}"><svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M7 14l3-4 3 3 5-6"/></svg></button>`;
+}
+let chT = null, chIv = 'D';
+function drawChart(){
+  const box = $('#chartBox');
+  box.innerHTML = '<div class="ld">Loading chart…</div>';
+  const wrap = document.createElement('div');
+  wrap.className = 'tradingview-widget-container';
+  wrap.innerHTML = '<div class="tradingview-widget-container__widget" style="height:100%;width:100%"></div>';
+  const s = document.createElement('script');
+  s.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
+  s.async = true;
+  s.text = JSON.stringify({
+    autosize:true, symbol:tvSym(chT), interval:chIv, timezone:'Asia/Singapore', theme:'dark', style:'1',
+    locale:'en', backgroundColor:'#0f1417', gridColor:'rgba(42,53,59,0.6)',
+    hide_side_toolbar:true, hide_top_toolbar:false, allow_symbol_change:true, save_image:false,
+    calendar:false, studies:['Volume@tv-basicstudies'], support_host:'https://www.tradingview.com'
+  });
+  s.onerror = () => { box.innerHTML = '<div class="ld">Chart could not load. Check your connection or use the links below.</div>'; };
+  wrap.appendChild(s);
+  box.appendChild(wrap);
+  setTimeout(() => { const l = box.querySelector('.ld'); if (l) l.textContent = 'Still loading… slow connection? Try the links below.'; }, 8000);
+}
+function openChart(t){
+  if (!navigator.onLine){ toast('Charts need internet'); return; }
+  chT = t;
+  $('#chSym').textContent = t + (LEV[t] ? `  ${fmtMult(LEV[t].mult)} ${LEV[t].base}` : '');
+  $('#lTv').href = `https://www.tradingview.com/chart/?symbol=${encodeURIComponent(tvSym(t))}`;
+  $('#lYh').href = `https://finance.yahoo.com/quote/${encodeURIComponent(t)}/chart`;
+  $('#lFv').href = `https://finviz.com/quote.ashx?t=${encodeURIComponent(t)}`;
+  $('#chartSheet').classList.add('on');
+  document.body.style.overflow = 'hidden';
+  history.pushState({chart:t}, '');   // so Android back button closes the chart
+  drawChart();
+}
+function closeChart(fromPop){
+  if (!$('#chartSheet').classList.contains('on')) return;
+  $('#chartSheet').classList.remove('on');
+  $('#chartBox').innerHTML = '';
+  document.body.style.overflow = '';
+  if (!fromPop && history.state && history.state.chart) history.back();
+}
+$('#chClose').onclick = () => closeChart(false);
+window.addEventListener('popstate', () => closeChart(true));
+$('#chIv').addEventListener('click', e => {
+  const b = e.target.closest('.chip'); if (!b) return;
+  chIv = b.dataset.iv;
+  document.querySelectorAll('#chIv .chip').forEach(c => c.classList.toggle('on', c===b));
+  drawChart();
+});
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-chart]'); if (!b) return;
+  e.stopPropagation(); openChart(b.dataset.chart);
+}, true);
+
 $('#results').addEventListener('click', e => {
   const row = e.target.closest('.res[data-i]'); if (!row) return;
   document.getElementById('d-'+row.dataset.i).classList.toggle('on');
