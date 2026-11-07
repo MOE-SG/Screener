@@ -1,0 +1,425 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0f1417">
+<title>Doubler</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
+<style>
+:root{
+  --bg:#0f1417;--panel:#171e22;--panel2:#1e272c;--line:#2a353b;
+  --ink:#e6ecef;--mute:#8a9aa3;--acc:#3ccf91;--bear:#ef6b5b;--warn:#e8b54a;--blue:#5aa9e6;
+  --r:12px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+body{padding-bottom:calc(64px + env(safe-area-inset-bottom))}
+header{position:sticky;top:0;z-index:5;background:var(--bg);padding:14px 16px 10px;border-bottom:1px solid var(--line)}
+header h1{margin:0;font-size:19px;letter-spacing:.2px}
+header p{margin:2px 0 0;color:var(--mute);font-size:12.5px}
+main{padding:12px 16px;max-width:760px;margin:0 auto}
+.tab{display:none}.tab.on{display:block}
+nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--panel);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom);z-index:9}
+nav button{flex:1;background:none;border:0;color:var(--mute);padding:10px 0 9px;font:inherit;font-size:12.5px;display:flex;flex-direction:column;align-items:center;gap:3px}
+nav button svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8}
+nav button.on{color:var(--acc)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:14px;margin-bottom:12px}
+.card h2{margin:0 0 8px;font-size:15px}
+label{display:block;font-size:12.5px;color:var(--mute);margin:8px 0 4px}
+input,textarea,select{width:100%;background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:10px;font:inherit}
+textarea{min-height:110px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{background:var(--acc);color:#06210f;border:0;border-radius:10px;padding:11px 16px;font:inherit;font-weight:600}
+.btn.ghost{background:var(--panel2);color:var(--ink);border:1px solid var(--line);font-weight:500}
+.btn:disabled{opacity:.5}
+.muted{color:var(--mute);font-size:12.5px}
+.bar{height:6px;background:var(--panel2);border-radius:4px;overflow:hidden;margin-top:10px}
+.bar i{display:block;height:100%;width:0;background:var(--acc);transition:width .3s}
+.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:10px}
+.chip{flex:none;background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:20px;padding:6px 12px;font:inherit;font-size:13px}
+.chip.on{background:var(--acc);color:#06210f;border-color:var(--acc)}
+.res{display:flex;align-items:center;gap:12px;padding:12px;border-bottom:1px solid var(--line)}
+.res:last-child{border-bottom:0}
+.score{flex:none;width:46px;height:46px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:15px;border:3px solid var(--line)}
+.res .t{font-weight:700}
+.res .s{color:var(--mute);font-size:12.5px}
+.res .r{margin-left:auto;text-align:right;font-variant-numeric:tabular-nums}
+.up{color:var(--acc)}.dn{color:var(--bear)}
+.tag{display:inline-block;font-size:11px;padding:1px 7px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);color:var(--mute);margin-left:6px}
+.tag.lev{color:var(--warn);border-color:#5c4a1e}
+.detail{display:none;padding:0 12px 12px;font-size:13px}
+.detail.on{display:block}
+.comp{display:grid;grid-template-columns:110px 1fr 40px;gap:8px;align-items:center;margin:5px 0}
+.comp .b{height:6px;background:var(--panel2);border-radius:4px;overflow:hidden}
+.comp .b i{display:block;height:100%;background:var(--blue)}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:9px 6px;border-bottom:1px solid var(--line)}
+th{color:var(--mute);font-weight:500;font-size:12px}
+td.m{font-weight:700;font-variant-numeric:tabular-nums}
+.bull{color:var(--acc)}.bear{color:var(--bear)}
+.grp{margin:16px 0 4px;font-size:13px;color:var(--mute);text-transform:uppercase;letter-spacing:.6px}
+.out{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.out div{background:var(--panel2);border-radius:9px;padding:10px}
+.out b{display:block;font-size:20px;font-variant-numeric:tabular-nums}
+.note{border-left:3px solid var(--warn);padding:8px 10px;background:var(--panel2);border-radius:6px;font-size:13px;color:var(--mute)}
+.toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--line);padding:9px 14px;border-radius:20px;font-size:13px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:20}
+.toast.on{opacity:1}
+</style>
+</head>
+<body>
+<header>
+  <h1 id="hdr">Doubling Screener</h1>
+  <p id="sub">Rank stocks by potential to double in 3–12 months</p>
+</header>
+
+<main>
+<!-- SCREENER -->
+<section class="tab on" id="t-scr">
+  <div class="card">
+    <div class="row">
+      <button class="btn" id="scanBtn">Scan watchlist</button>
+      <button class="btn ghost" id="stopBtn" disabled>Stop</button>
+      <button class="btn ghost" id="xlsBtn">Export Excel</button>
+    </div>
+    <div class="bar"><i id="prog"></i></div>
+    <p class="muted" id="status">Add your free Finnhub key in Settings, then tap Scan.</p>
+  </div>
+  <div class="chips" id="sortChips">
+    <button class="chip on" data-k="score">Score</button>
+    <button class="chip" data-k="mom">Momentum</button>
+    <button class="chip" data-k="grow">Growth</button>
+    <button class="chip" data-k="cap">Smallest cap</button>
+  </div>
+  <div class="card" style="padding:0" id="results"><p class="muted" style="padding:14px;margin:0">No results yet.</p></div>
+  <p class="note">A heuristic score, not a prediction or advice. It favours fast growth, strong momentum, smaller size and a wide trading range. Leveraged ETFs are flagged and left out of the ranking, since they can double from leverage alone.</p>
+</section>
+
+<!-- ETFs -->
+<section class="tab" id="t-etf">
+  <input id="etfQ" placeholder="Search ticker or base (e.g. QQQ, SOXL, gold)" autocomplete="off">
+  <div class="chips" style="margin-top:10px" id="etfChips">
+    <button class="chip on" data-f="all">All</button>
+    <button class="chip" data-f="bull">Bull (+)</button>
+    <button class="chip" data-f="bear">Bear (−)</button>
+    <button class="chip" data-f="3">3x only</button>
+  </div>
+  <div id="etfList"></div>
+
+  <div class="card" style="margin-top:16px">
+    <h2>Decay check</h2>
+    <p class="muted" style="margin:0">The index alternates up and down by the same % each day. See how the leveraged fund ends up.</p>
+    <div class="row">
+      <div style="flex:1;min-width:90px"><label>Leverage</label><select id="dL"><option>3</option><option>2</option><option>-1</option><option>-2</option><option>-3</option></select></div>
+      <div style="flex:1;min-width:90px"><label>Daily move %</label><input id="dM" type="number" value="2" step="0.5" inputmode="decimal"></div>
+      <div style="flex:1;min-width:90px"><label>Days</label><input id="dN" type="number" value="60" step="2" inputmode="numeric"></div>
+    </div>
+    <div class="out">
+      <div><span class="muted">Index</span><b id="dIdx">–</b></div>
+      <div><span class="muted">Leveraged fund</span><b id="dLev">–</b></div>
+    </div>
+  </div>
+</section>
+
+<!-- SETTINGS -->
+<section class="tab" id="t-set">
+  <div class="card">
+    <h2>Data source</h2>
+    <label for="key">Finnhub API key (free at finnhub.io)</label>
+    <input id="key" type="password" placeholder="Paste key" autocomplete="off">
+    <p class="muted">Stored only on this phone. Free tier allows about 60 calls a minute, so a scan takes roughly 2 seconds per ticker.</p>
+  </div>
+  <div class="card">
+    <h2>Watchlist</h2>
+    <label for="wl">Tickers, separated by spaces, commas or new lines</label>
+    <textarea id="wl"></textarea>
+    <div class="row" style="margin-top:10px">
+      <button class="btn" id="saveBtn">Save</button>
+      <button class="btn ghost" id="resetWl">Reset to default</button>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Score weights (%)</h2>
+    <div class="row" id="wts"></div>
+    <p class="muted">They are normalised, so they don't have to add up to 100.</p>
+  </div>
+  <div class="card">
+    <h2>Install on Android</h2>
+    <p class="muted" style="margin:0">Open this page in Chrome, tap ⋮ then <b>Add to Home screen</b> (or <b>Install app</b>). The ETF tab works offline; scanning needs internet.</p>
+  </div>
+</section>
+</main>
+
+<nav>
+  <button class="on" data-t="t-scr"><svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 15l4-5 3 3 5-6"/></svg>Screener</button>
+  <button data-t="t-etf"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Leveraged ETFs</button>
+  <button data-t="t-set"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Settings</button>
+</nav>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---------- storage helpers ---------- */
+const LS = {
+  get(k, d){ try{ const v = localStorage.getItem('dbl_'+k); return v===null ? d : JSON.parse(v); }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem('dbl_'+k, JSON.stringify(v)); }catch(e){} }
+};
+const $ = s => document.querySelector(s);
+const toast = m => { const t=$('#toast'); t.textContent=m; t.classList.add('on'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('on'),2200); };
+
+/* ---------- leveraged ETF data (verified late Jun 2026; check issuer before trading) ---------- */
+const ETF_GROUPS = [
+  {g:'Nasdaq-100', base:'QQQ', rows:[['QLD',2],['TQQQ',3],['PSQ',-1],['QID',-2],['SQQQ',-3]]},
+  {g:'S&P 500', base:'SPY / VOO', rows:[['SSO',2],['UPRO',3],['SPXL',3],['SH',-1],['SDS',-2],['SPXU',-3],['SPXS',-3]]},
+  {g:'Dow 30', base:'DIA', rows:[['DDM',2],['UDOW',3],['DOG',-1],['DXD',-2],['SDOW',-3]]},
+  {g:'Russell 2000', base:'IWM', rows:[['UWM',2],['TNA',3],['URTY',3],['RWM',-1],['TWM',-2],['TZA',-3]]},
+  {g:'Semiconductors', base:'SOXX / SMH', rows:[['USD',2],['SOXL',3],['SOXS',-3]]},
+  {g:'Technology', base:'XLK', rows:[['ROM',2],['TECL',3],['TECS',-3]]},
+  {g:'Financials', base:'XLF', rows:[['UYG',2],['FAS',3],['FAZ',-3]]},
+  {g:'Energy', base:'XLE', rows:[['ERX',2],['ERY',-2]]},
+  {g:'Biotech', base:'XBI', rows:[['LABU',3],['LABD',-3]]},
+  {g:'20+yr Treasury', base:'TLT', rows:[['UBT',2],['TMF',3],['TBT',-2],['TMV',-3]]},
+  {g:'Gold', base:'GLD', rows:[['UGL',2],['GLL',-2]]},
+  {g:'Silver', base:'SLV', rows:[['AGQ',2],['ZSL',-2]]},
+  {g:'Single stocks', base:'NVDA, TSLA, MU, AMD, GOOGL', rows:[['NVDL',2,'NVDA'],['TSLL',2,'TSLA'],['MUU',2,'MU'],['AMDL',2,'AMD'],['GGLL',2,'GOOGL']]},
+];
+const LEV = {};
+ETF_GROUPS.forEach(g => g.rows.forEach(r => LEV[r[0]] = {mult:r[1], base:r[2]||g.base, group:g.g}));
+
+/* ---------- ETF tab ---------- */
+let etfFilter = 'all';
+function fmtMult(m){ return (m>0?'+':'−') + Math.abs(m) + 'x'; }
+function renderEtf(){
+  const q = $('#etfQ').value.trim().toLowerCase();
+  let html = '';
+  ETF_GROUPS.forEach(g => {
+    const hitGroup = !q || g.g.toLowerCase().includes(q) || g.base.toLowerCase().includes(q);
+    const rows = g.rows.filter(r => {
+      if (etfFilter==='bull' && r[1]<0) return false;
+      if (etfFilter==='bear' && r[1]>0) return false;
+      if (etfFilter==='3' && Math.abs(r[1])!==3) return false;
+      return hitGroup || r[0].toLowerCase().includes(q) || (r[2]||'').toLowerCase().includes(q);
+    });
+    if (!rows.length) return;
+    html += `<div class="grp">${g.g} · base ${g.base}</div><div class="card" style="padding:4px 10px"><table><tr><th>Ticker</th><th>Multiple</th><th>Index up 1% today</th></tr>`;
+    rows.forEach(r => {
+      const cls = r[1]>0 ? 'bull' : 'bear';
+      const lbl = r[2] ? ` <span class="tag">${r[2]}</span>` : '';
+      html += `<tr><td><b>${r[0]}</b>${lbl}</td><td class="m ${cls}">${fmtMult(r[1])}</td><td class="${cls}">≈ ${r[1]>0?'+':''}${r[1]}%</td></tr>`;
+    });
+    html += '</table></div>';
+  });
+  $('#etfList').innerHTML = html || '<p class="muted">No match.</p>';
+}
+$('#etfQ').addEventListener('input', renderEtf);
+$('#etfChips').addEventListener('click', e => {
+  const b = e.target.closest('.chip'); if(!b) return;
+  etfFilter = b.dataset.f;
+  document.querySelectorAll('#etfChips .chip').forEach(c => c.classList.toggle('on', c===b));
+  renderEtf();
+});
+
+function decay(){
+  const L = +$('#dL').value, m = (+$('#dM').value||0)/100, n = Math.max(2, +$('#dN').value||2);
+  const pairs = Math.floor(n/2), odd = n % 2;
+  let idx = Math.pow((1+m)*(1-m), pairs) * (odd ? 1+m : 1) - 1;
+  let lev = Math.pow((1+L*m)*(1-L*m), pairs) * (odd ? 1+L*m : 1) - 1;
+  const f = v => (v>=0?'+':'') + (v*100).toFixed(1) + '%';
+  $('#dIdx').textContent = f(idx);
+  $('#dLev').textContent = f(lev);
+  $('#dLev').className = lev<0 ? 'dn' : 'up';
+}
+['#dL','#dM','#dN'].forEach(s => $(s).addEventListener('input', decay));
+
+/* ---------- settings ---------- */
+const DEFAULT_WL = `PLTR SOFI HOOD RKLB IONQ HIMS APP AFRM UPST CELH
+ASTS OKLO SMCI CRWD NET DDOG SNOW SHOP MELI NU
+TMDX AXON DUOL CAVA ELF ONON RDDT ALAB VRT ANET
+CRDO NVDA AMD MU TSLA COIN MSTR SOUN BBAI ACHR
+TQQQ SOXL`;
+const DEFAULT_W = {grow:30, mom:25, vol:20, cap:15, pos:10};
+const W_LABEL = {grow:'Growth', mom:'Momentum', vol:'Range / beta', cap:'Small size', pos:'Near 52w high'};
+function loadSettings(){
+  $('#key').value = LS.get('key','');
+  $('#wl').value = LS.get('wl', DEFAULT_WL);
+  const w = LS.get('w', DEFAULT_W);
+  $('#wts').innerHTML = Object.keys(DEFAULT_W).map(k =>
+    `<div style="flex:1;min-width:120px"><label>${W_LABEL[k]}</label><input type="number" min="0" max="100" data-w="${k}" value="${w[k]??DEFAULT_W[k]}" inputmode="numeric"></div>`).join('');
+}
+function weights(){
+  const w = {}; document.querySelectorAll('[data-w]').forEach(i => w[i.dataset.w] = Math.max(0, +i.value||0)); return w;
+}
+$('#saveBtn').onclick = () => { LS.set('key', $('#key').value.trim()); LS.set('wl', $('#wl').value); LS.set('w', weights()); rescore(); toast('Saved'); };
+$('#key').addEventListener('change', () => LS.set('key', $('#key').value.trim()));
+$('#resetWl').onclick = () => { $('#wl').value = DEFAULT_WL; LS.set('wl', DEFAULT_WL); toast('Watchlist reset'); };
+document.addEventListener('change', e => { if (e.target.dataset && e.target.dataset.w){ LS.set('w', weights()); rescore(); } });
+
+/* ---------- scoring ---------- */
+const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+const lin = (v, lo, hi) => v==null || isNaN(v) ? null : clamp((v-lo)/(hi-lo)*100, 0, 100);
+const avg = arr => { const a = arr.filter(x => x!=null); return a.length ? a.reduce((s,x)=>s+x,0)/a.length : null; };
+function components(d){
+  const m = d.m || {};
+  const price = d.price;
+  const hi = m['52WeekHigh'], lo = m['52WeekLow'];
+  const capM = m.marketCapitalization; // in millions USD
+  return {
+    grow: avg([lin(m.revenueGrowthTTMYoy, 0, 60), lin(m.revenueGrowthQuarterlyYoy, 0, 60), lin(m.epsGrowthTTMYoy, 0, 100)]),
+    mom:  avg([lin(m['26WeekPriceReturnDaily'], -20, 100), lin(m['13WeekPriceReturnDaily'], -15, 60)]),
+    vol:  avg([hi && lo ? lin(hi/lo, 1.3, 4) : null, lin(m.beta, 0.8, 2.5)]),
+    cap:  capM ? clamp(100 - (Math.log10(capM) - Math.log10(300)) / (Math.log10(200000) - Math.log10(300)) * 100, 0, 100) : null,
+    pos:  price && hi ? lin(price/hi, 0.5, 0.95) : null,
+  };
+}
+function scoreOf(c, w){
+  let s = 0, tw = 0;
+  for (const k in w){ if (c[k]!=null && w[k]>0){ s += c[k]*w[k]; tw += w[k]; } }
+  return tw ? Math.round(s/tw) : null;
+}
+
+/* ---------- scanning ---------- */
+let results = LS.get('results', []);
+let stopFlag = false, sortKey = 'score';
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+async function fh(path, key){
+  for (let attempt=0; attempt<3; attempt++){
+    const r = await fetch(`https://finnhub.io/api/v1/${path}&token=${encodeURIComponent(key)}`);
+    if (r.status === 429){ await sleep(5000); continue; }
+    if (r.status === 401 || r.status === 403) throw new Error('Key rejected (check Settings)');
+    if (!r.ok) throw new Error('HTTP '+r.status);
+    return r.json();
+  }
+  throw new Error('Rate limited');
+}
+function parseWl(){ return [...new Set($('#wl').value.toUpperCase().split(/[\s,;]+/).filter(Boolean))]; }
+
+$('#scanBtn').onclick = async () => {
+  const key = $('#key').value.trim() || LS.get('key','');
+  if (!key){ toast('Add your Finnhub key in Settings'); switchTab('t-set'); return; }
+  const list = parseWl();
+  if (!list.length){ toast('Watchlist is empty'); return; }
+  if (!navigator.onLine){ toast('You are offline'); return; }
+  stopFlag = false; $('#scanBtn').disabled = true; $('#stopBtn').disabled = false;
+  const out = []; let fails = 0;
+  for (let i=0; i<list.length && !stopFlag; i++){
+    const t = list[i];
+    $('#status').textContent = `Scanning ${t} (${i+1}/${list.length})…`;
+    $('#prog').style.width = (i/list.length*100)+'%';
+    if (LEV[t]){ out.push({t, lev:LEV[t]}); continue; }
+    try{
+      const q = await fh(`quote?symbol=${t}`, key); await sleep(1050);
+      const mt = await fh(`stock/metric?symbol=${t}&metric=all`, key); await sleep(1050);
+      if (!q || !q.c){ fails++; out.push({t, err:'No data'}); continue; }
+      out.push({t, price:q.c, dp:q.dp, m:mt.metric||{}});
+    }catch(e){
+      fails++; out.push({t, err:e.message});
+      if (/Key rejected/.test(e.message)){ $('#status').textContent = e.message; break; }
+    }
+    results = out.slice(); rescore(false);
+  }
+  $('#prog').style.width = '100%';
+  results = out; LS.set('results', results); LS.set('scanAt', Date.now()); rescore();
+  $('#status').textContent = `${stopFlag?'Stopped':'Done'} · ${out.length} tickers${fails?`, ${fails} without data`:''} · ${new Date().toLocaleString()}`;
+  $('#scanBtn').disabled = false; $('#stopBtn').disabled = true;
+};
+$('#stopBtn').onclick = () => { stopFlag = true; };
+
+function rescore(save=true){
+  const w = weights();
+  results.forEach(r => { if (r.m){ r.c = components(r); r.score = scoreOf(r.c, w); } });
+  if (save) LS.set('results', results);
+  renderResults();
+}
+const pct = v => v==null||isNaN(v) ? '–' : (v>=0?'+':'')+(+v).toFixed(1)+'%';
+const capFmt = m => !m ? '–' : m>=1e6 ? '$'+(m/1e6).toFixed(2)+'T' : m>=1e3 ? '$'+(m/1e3).toFixed(1)+'B' : '$'+m.toFixed(0)+'M';
+function scoreColor(s){ return s==null ? 'var(--line)' : s>=70 ? 'var(--acc)' : s>=50 ? 'var(--warn)' : 'var(--bear)'; }
+
+function renderResults(){
+  if (!results.length){ $('#results').innerHTML = '<p class="muted" style="padding:14px;margin:0">No results yet.</p>'; return; }
+  const key = {
+    score: r => r.score ?? -1,
+    mom: r => r.m?.['26WeekPriceReturnDaily'] ?? -1e9,
+    grow: r => r.m?.revenueGrowthTTMYoy ?? -1e9,
+    cap: r => -(r.m?.marketCapitalization ?? 1e12),
+  }[sortKey];
+  const ranked = results.filter(r => r.m).sort((a,b) => key(b)-key(a));
+  const lev = results.filter(r => r.lev), bad = results.filter(r => r.err);
+  let h = '';
+  ranked.forEach((r,i) => {
+    const m = r.m;
+    h += `<div class="res" data-i="${r.t}">
+      <div class="score" style="border-color:${scoreColor(r.score)}">${r.score ?? '–'}</div>
+      <div><div class="t">${i+1}. ${r.t}</div><div class="s">${capFmt(m.marketCapitalization)} · 6M ${pct(m['26WeekPriceReturnDaily'])} · Rev ${pct(m.revenueGrowthTTMYoy)}</div></div>
+      <div class="r"><div>$${(+r.price).toFixed(2)}</div><div class="${r.dp>=0?'up':'dn'}" style="font-size:12.5px">${pct(r.dp)}</div></div>
+    </div><div class="detail" id="d-${r.t}">${detailHtml(r)}</div>`;
+  });
+  lev.forEach(r => {
+    h += `<div class="res"><div class="score" style="border-color:var(--warn);font-size:12px">${fmtMult(r.lev.mult)}</div>
+      <div><div class="t">${r.t}<span class="tag lev">leveraged</span></div><div class="s">Tracks ${r.lev.base} · not ranked</div></div></div>`;
+  });
+  bad.forEach(r => { h += `<div class="res"><div class="score">?</div><div><div class="t">${r.t}</div><div class="s">${r.err}</div></div></div>`; });
+  $('#results').innerHTML = h;
+}
+function detailHtml(r){
+  const c = r.c || {}, m = r.m;
+  const bars = Object.keys(W_LABEL).map(k => `<div class="comp"><span>${W_LABEL[k]}</span><div class="b"><i style="width:${c[k]??0}%"></i></div><span>${c[k]==null?'–':Math.round(c[k])}</span></div>`).join('');
+  const f = v => v==null ? '–' : (+v).toFixed(2);
+  return `${bars}<div class="muted" style="margin-top:8px">52w ${f(m['52WeekLow'])} – ${f(m['52WeekHigh'])} · β ${f(m.beta)} · 3M ${pct(m['13WeekPriceReturnDaily'])} · EPS gr ${pct(m.epsGrowthTTMYoy)} · P/S ${f(m.psTTM)}</div>`;
+}
+$('#results').addEventListener('click', e => {
+  const row = e.target.closest('.res[data-i]'); if (!row) return;
+  document.getElementById('d-'+row.dataset.i).classList.toggle('on');
+});
+$('#sortChips').addEventListener('click', e => {
+  const b = e.target.closest('.chip'); if (!b) return;
+  sortKey = b.dataset.k;
+  document.querySelectorAll('#sortChips .chip').forEach(c => c.classList.toggle('on', c===b));
+  renderResults();
+});
+
+/* ---------- export ---------- */
+$('#xlsBtn').onclick = () => {
+  if (!results.length){ toast('Nothing to export yet'); return; }
+  const rows = results.filter(r => r.m).sort((a,b)=>(b.score??-1)-(a.score??-1)).map((r,i) => ({
+    Rank:i+1, Ticker:r.t, Score:r.score, Price:r.price, 'Day %':r.dp,
+    'Mkt cap ($M)':r.m.marketCapitalization, '6M return %':r.m['26WeekPriceReturnDaily'], '3M return %':r.m['13WeekPriceReturnDaily'],
+    'Rev growth TTM %':r.m.revenueGrowthTTMYoy, 'Rev growth Q %':r.m.revenueGrowthQuarterlyYoy, 'EPS growth TTM %':r.m.epsGrowthTTMYoy,
+    '52w low':r.m['52WeekLow'], '52w high':r.m['52WeekHigh'], Beta:r.m.beta, 'P/S':r.m.psTTM,
+    'Growth pts':r.c?.grow, 'Momentum pts':r.c?.mom, 'Range pts':r.c?.vol, 'Size pts':r.c?.cap, 'Near-high pts':r.c?.pos,
+  }));
+  const levRows = []; ETF_GROUPS.forEach(g => g.rows.forEach(r => levRows.push({Group:g.g, Base:r[2]||g.base, Ticker:r[0], Multiple:r[1]})));
+  const stamp = new Date().toISOString().slice(0,10);
+  if (window.XLSX){
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Screener');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(levRows), 'Leveraged ETFs');
+    XLSX.writeFile(wb, `doubling_screener_${stamp}.xlsx`);
+  } else {
+    const cols = Object.keys(rows[0]);
+    const csv = [cols.join(',')].concat(rows.map(r => cols.map(c => r[c]==null?'':r[c]).join(','))).join('\n');
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+    a.download = `doubling_screener_${stamp}.csv`; a.click();
+  }
+};
+
+/* ---------- tabs ---------- */
+const TITLES = {'t-scr':['Doubling Screener','Rank stocks by potential to double in 3–12 months'],
+  't-etf':['Leveraged ETFs','Multiples and base index. Negative = inverse'], 't-set':['Settings','Key, watchlist and score weights']};
+function switchTab(id){
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t.id===id));
+  document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.t===id));
+  $('#hdr').textContent = TITLES[id][0]; $('#sub').textContent = TITLES[id][1];
+  window.scrollTo(0,0);
+}
+document.querySelector('nav').addEventListener('click', e => { const b = e.target.closest('button'); if (b) switchTab(b.dataset.t); });
+
+/* ---------- init ---------- */
+loadSettings(); renderEtf(); decay(); rescore(false);
+const at = LS.get('scanAt', 0);
+if (at && results.length) $('#status').textContent = `Last scan ${new Date(at).toLocaleString()} · tap Scan to refresh`;
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+</html>
