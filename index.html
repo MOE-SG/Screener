@@ -51,6 +51,11 @@ textarea{min-height:110px;font-family:ui-monospace,Menlo,Consolas,monospace;font
 .up{color:var(--acc)}.dn{color:var(--bear)}
 .tag{display:inline-block;font-size:11px;padding:1px 7px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);color:var(--mute);margin-left:6px}
 .tag.lev{color:var(--warn);border-color:#5c4a1e}
+.tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
+.tags .tag{margin:0}
+.tag.g{color:var(--acc);border-color:#1f5a40}.tag.w{color:var(--warn);border-color:#5c4a1e}.tag.b{color:var(--bear);border-color:#5e2a24}
+.res .mid{flex:1;min-width:0}
+.setup{margin-top:10px;padding-top:8px;border-top:1px dashed var(--line);display:grid;gap:4px}
 .detail{display:none;padding:0 12px 12px;font-size:13px}
 .detail.on{display:block}
 .comp{display:grid;grid-template-columns:110px 1fr 40px;gap:8px;align-items:center;margin:5px 0}
@@ -80,6 +85,32 @@ td .tk{background:none;border:0;color:var(--ink);font:inherit;font-weight:700;pa
 #chartBox .ld{position:absolute;inset:0;display:grid;place-items:center;color:var(--mute);font-size:13px}
 .ch-links{display:flex;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));border-top:1px solid var(--line)}
 .ch-links a{flex:1;text-align:center;background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:10px;padding:10px 4px;text-decoration:none;font-size:13px}
+#tip{position:fixed;z-index:50;max-width:min(320px,calc(100vw - 24px));background:#26323a;color:var(--ink);border:1px solid #3a4851;border-radius:10px;padding:9px 11px;font-size:13px;line-height:1.4;box-shadow:0 6px 20px rgba(0,0,0,.45);opacity:0;pointer-events:none;transition:opacity .15s}
+#tip.on{opacity:1}
+[data-tip]{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+.hint{font-size:12px;color:var(--mute);margin:6px 0 0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}
+.ptab td{padding:8px 4px;vertical-align:top}.ptab td:first-child{color:var(--mute);white-space:nowrap}
+.ptab td.v{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.card h3{margin:14px 0 4px;font-size:14px}
+.pill{display:inline-block;padding:3px 9px;border-radius:12px;font-size:12.5px;border:1px solid var(--line);background:var(--panel2)}
+.pill.g{color:var(--acc);border-color:#1f5a40}.pill.w{color:var(--warn);border-color:#5c4a1e}.pill.b{color:var(--bear);border-color:#5e2a24}
+.sp{border:1px solid var(--line);border-radius:10px;padding:10px;margin-top:8px}
+.sp .row .btn{padding:7px 10px;font-size:13px}
+.zlayer{position:absolute;inset:0;pointer-events:none;z-index:2;overflow:hidden}
+.zband{position:absolute;left:0;display:none;box-sizing:border-box}
+.zband.zs{background:rgba(60,207,145,.09);border-top:1px solid rgba(60,207,145,.35);border-bottom:1px solid rgba(60,207,145,.35)}
+.zband.zr{background:rgba(239,107,91,.09);border-top:1px solid rgba(239,107,91,.35);border-bottom:1px solid rgba(239,107,91,.35)}
+.zband.zk.zs{background:rgba(60,207,145,.22);border-width:2px}.zband.zk.zr{background:rgba(239,107,91,.22);border-width:2px}
+.zband.zk span{opacity:1;font-weight:600}
+.zband span{position:absolute;left:4px;top:50%;transform:translateY(-50%);font-size:10px;color:var(--ink);opacity:.75;white-space:nowrap}
+#chInfo{padding:0 12px 8px;font-size:12.5px;color:var(--mute);min-height:18px}
+.mkt{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--line);border-radius:var(--r);padding:10px 12px;margin-bottom:12px;font-size:13px}
+.mkt.up{border-left-color:var(--acc)}.mkt.caution{border-left-color:var(--warn)}.mkt.down{border-left-color:var(--bear)}
+.mkt .hd{display:flex;align-items:center;gap:8px;justify-content:space-between}
+.mkt .hd b{font-size:14.5px}
+.mkt .ix{color:var(--mute);margin-top:5px;line-height:1.5}
+.mkt .adv{margin-top:5px}
 .toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--line);padding:9px 14px;border-radius:20px;font-size:13px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:20}
 .toast.on{opacity:1}
 </style>
@@ -93,38 +124,42 @@ td .tk{background:none;border:0;color:var(--ink);font:inherit;font-weight:700;pa
 <main>
 <!-- SCREENER -->
 <section class="tab on" id="t-scr">
+  <div class="mkt" id="mktScr"></div>
   <div class="card">
     <div class="row">
-      <button class="btn" id="scanBtn">Scan watchlist</button>
-      <button class="btn ghost" id="stopBtn" disabled>Stop</button>
-      <button class="btn ghost" id="xlsBtn">Export Excel</button>
+      <button class="btn" id="scanBtn" data-tip="Fetch fresh prices, financials, earnings dates and price history for every ticker in your watchlist, then score and rank them.">Scan watchlist</button>
+      <button class="btn ghost" id="stopBtn" disabled data-tip="Stop the scan. Tickers already fetched stay in the list.">Stop</button>
+      <button class="btn ghost" id="xlsBtn" data-tip="Download an Excel file with all scores, setup checks and earnings dates, plus a sheet of leveraged ETFs.">Export Excel</button>
     </div>
     <div class="bar"><i id="prog"></i></div>
+    <p class="hint">Long-press any button or tag for an explanation.</p>
     <p class="muted" id="status">Add your free Finnhub key in Settings, then tap Scan.</p>
   </div>
   <div class="chips" id="sortChips">
-    <button class="chip on" data-k="score">Score</button>
-    <button class="chip" data-k="mom">Momentum</button>
-    <button class="chip" data-k="grow">Growth</button>
-    <button class="chip" data-k="cap">Smallest cap</button>
+    <button class="chip on" data-k="score" data-tip="Sort by the 0–100 doubling score: growth, momentum, trading range, small size and nearness to the 52-week high, weighted as set in Settings.">Score</button>
+    <button class="chip" data-k="mom" data-tip="Sort by 6-month price return, strongest first.">Momentum</button>
+    <button class="chip" data-k="grow" data-tip="Sort by revenue growth over the last 12 months versus the year before, fastest first.">Growth</button>
+    <button class="chip" data-k="cap" data-tip="Sort by market value, smallest first. Smaller companies need less money flowing in to double.">Smallest cap</button>
+    <button class="chip" data-k="rs" data-tip="Sort by relative strength: how much better the stock has done than the S&amp;P 500 over the last 3–12 months (recent months count double). Stocks that double are usually already leaders.">Rel. strength</button>
+    <button class="chip" data-k="setup" data-tip="Sort by Setup score (0–4), then by the main score. 4/4 means: uptrend, breakout or near the breakout level, not more than 10% above the 50-day average, and no earnings in the next 7 days. A good shortlist of charts to check today.">Setup ready</button>
   </div>
   <div class="card" style="padding:0" id="results"><p class="muted" style="padding:14px;margin:0">No results yet.</p></div>
-  <p class="note">A heuristic score, not a prediction or advice. It favours fast growth, strong momentum, smaller size and a wide trading range. Leveraged ETFs are flagged and left out of the ranking, since they can double from leverage alone.</p>
+  <p class="note">A heuristic score, not a prediction or advice. It favours fast growth, strong momentum, smaller size and a wide trading range. Leveraged ETFs are flagged and left out of the ranking, since they can double from leverage alone.<br><br><b>Setup x/4</b> counts four entry checks: (1) price above a rising 50-day and 200-day average, (2) breaking out of a sideways base (range ≤ 20% over 25 days) on ≥ 1.5× average volume, or sitting within 5% of the breakout level, (3) no more than 10% above the 50-day average, (4) no earnings in the next 7 days. During US trading hours today's bar is still forming, so its volume reads low.</p>
 </section>
 
 <!-- ETFs -->
 <section class="tab" id="t-etf">
   <input id="etfQ" placeholder="Search ticker or base (e.g. QQQ, SOXL, gold)" autocomplete="off">
   <div class="chips" style="margin-top:10px" id="etfChips">
-    <button class="chip on" data-f="all">All</button>
-    <button class="chip" data-f="bull">Bull (+)</button>
-    <button class="chip" data-f="bear">Bear (−)</button>
-    <button class="chip" data-f="3">3x only</button>
+    <button class="chip on" data-f="all" data-tip="Show every leveraged and inverse ETF.">All</button>
+    <button class="chip" data-f="bull" data-tip="Only funds that rise when the index rises (+2x, +3x).">Bull (+)</button>
+    <button class="chip" data-f="bear" data-tip="Only inverse funds that rise when the index falls (−1x, −2x, −3x).">Bear (−)</button>
+    <button class="chip" data-f="3" data-tip="Only 3x funds (bull and bear), the most volatile kind.">3x only</button>
   </div>
   <div id="etfList"></div>
 
   <div class="card" style="margin-top:16px">
-    <h2>Decay check</h2>
+    <h2 data-tip="Shows how daily resets erode a leveraged fund in a choppy market, even when the index ends near where it started.">Decay check ⓘ</h2>
     <p class="muted" style="margin:0">The index alternates up and down by the same % each day. See how the leveraged fund ends up.</p>
     <div class="row">
       <div style="flex:1;min-width:90px"><label>Leverage</label><select id="dL"><option>3</option><option>2</option><option>-1</option><option>-2</option><option>-3</option></select></div>
@@ -142,17 +177,20 @@ td .tk{background:none;border:0;color:var(--ink);font:inherit;font-weight:700;pa
 <section class="tab" id="t-set">
   <div class="card">
     <h2>Data source</h2>
-    <label for="key">Finnhub API key (free at finnhub.io)</label>
+    <label for="key">Finnhub API key (free at finnhub.io) · prices, financials, earnings dates</label>
     <input id="key" type="password" placeholder="Paste key" autocomplete="off">
-    <p class="muted">Stored only on this phone. Free tier allows about 60 calls a minute, so a scan takes roughly 2 seconds per ticker.</p>
+    <p class="muted">Stored only on this phone. Free tier allows about 60 calls a minute, so a scan takes roughly 3 seconds per ticker.</p>
+    <label for="tdkey">Twelve Data API key (free at twelvedata.com) · moving averages, breakouts, volume</label>
+    <input id="tdkey" type="password" placeholder="Paste key" autocomplete="off">
+    <p class="muted">Free plan: 8 tickers a minute, 800 a day, so 40 tickers take about 5 minutes. History is cached for 6 hours, so re-scans the same day are quick. This runs alongside the Finnhub scan.</p>
   </div>
   <div class="card">
     <h2>Watchlist</h2>
     <label for="wl">Tickers, separated by spaces, commas or new lines</label>
     <textarea id="wl"></textarea>
     <div class="row" style="margin-top:10px">
-      <button class="btn" id="saveBtn">Save</button>
-      <button class="btn ghost" id="resetWl">Reset to default</button>
+      <button class="btn" id="saveBtn" data-tip="Save keys, watchlist and weights on this phone, and re-score current results.">Save</button>
+      <button class="btn ghost" id="resetWl" data-tip="Replace your watchlist with the built-in list of about 40 growth stocks.">Reset to default</button>
     </div>
   </div>
   <div class="card">
@@ -165,29 +203,80 @@ td .tk{background:none;border:0;color:var(--ink);font:inherit;font-weight:700;pa
     <p class="muted" style="margin:0">Open this page in Chrome, tap ⋮ then <b>Add to Home screen</b> (or <b>Install app</b>). The ETF tab works offline; scanning needs internet.</p>
   </div>
 </section>
+<!-- TRADE PLAN -->
+<section class="tab" id="t-plan">
+  <div class="mkt" id="mktPlan"></div>
+  <div class="card">
+    <h2>Pick a ticker</h2>
+    <div class="row">
+      <input id="pT" list="pList" placeholder="e.g. NVDA" autocomplete="off" autocapitalize="characters" style="flex:1;min-width:120px">
+      <button class="btn" id="pLoad" data-tip="Get the latest price, price history and earnings date for this ticker, then build the plan.">Load</button>
+    </div>
+    <datalist id="pList"></datalist>
+    <p class="muted" id="pMsg">Pick from your scanned stocks or type any US ticker.</p>
+  </div>
+
+  <div id="pBody" style="display:none">
+    <div class="card" id="pSetup"></div>
+    <div class="card">
+      <h2>Your numbers</h2>
+      <label for="pEntry">Entry price ($)</label>
+      <div class="row">
+        <input id="pEntry" type="number" step="0.01" inputmode="decimal" style="flex:1;min-width:110px">
+        <button class="btn ghost" id="pUseSug" data-tip="Use the entry suggested by the setup: the breakout or pivot level, or a pullback to the 50-day.">Suggested</button>
+        <button class="btn ghost" id="pUseCur" data-tip="Use the latest market price.">Current</button>
+      </div>
+      <div class="grid2">
+        <div><label for="pAcct" data-tip="Total money in your trading account, in US dollars.">Account size ($)</label><input id="pAcct" type="number" inputmode="decimal"></div>
+        <div><label for="pRisk" data-tip="The most you are willing to lose on this one trade if the stop is hit, as a % of the account. 1% is common; 2% is aggressive.">Risk per trade (%)</label><input id="pRisk" type="number" step="0.25" inputmode="decimal"></div>
+        <div><label for="pStopMode" data-tip="Auto: 1% under the nearest support zone if that is 2% to max-% below entry; otherwise the 10-day low if tighter than the max; otherwise the fixed max %. Below support zone: always 1% under the nearest support zone. Below 50-day: 1% under the 50-day average. Custom: your own price.">Stop method</label>
+          <select id="pStopMode"><option value="auto">Auto</option><option value="sup">Below support zone</option><option value="pct">Fixed %</option><option value="low10">Below 10-day low</option><option value="ma50">Below 50-day</option><option value="custom">Custom price</option></select></div>
+        <div><label for="pStopPct" data-tip="Largest drop from entry you accept before selling. 7–8% is a common rule for growth stocks.">Max stop (%)</label><input id="pStopPct" type="number" step="0.5" inputmode="decimal"></div>
+        <div><label for="pCustom">Custom stop ($)</label><input id="pCustom" type="number" step="0.01" inputmode="decimal" placeholder="only for Custom"></div>
+        <div><label for="pMaxPos" data-tip="Cap on how much of the account goes into one stock, even if the stop is very tight.">Max position (%)</label><input id="pMaxPos" type="number" step="5" inputmode="decimal"></div>
+        <div><label for="pT1" data-tip="First profit target. Sell about a third here and move the stop up to your entry price.">Target 1 (+%)</label><input id="pT1" type="number" step="5" inputmode="decimal"></div>
+        <div><label for="pTrail" data-tip="After Target 1, sell the rest if it falls this % from its highest price, or closes below the 50-day average.">Trailing stop (%)</label><input id="pTrail" type="number" step="1" inputmode="decimal"></div>
+        <div><label for="pTime" data-tip="If the stock has not gained at least 5% by then, sell and use the money elsewhere.">Time stop (weeks)</label><input id="pTime" type="number" step="1" inputmode="numeric"></div>
+      </div>
+    </div>
+    <div class="card" id="pOut"></div>
+    <button class="btn" id="pSave" style="width:100%;margin-bottom:12px" data-tip="Keep this plan on the phone so you can check it against live prices later.">Save plan</button>
+  </div>
+
+  <div class="card">
+    <div class="row"><h2 style="margin:0;flex:1">Saved plans</h2>
+      <button class="btn ghost" id="pCheck" data-tip="Fetch the latest prices and show which rule, if any, has been triggered for each saved plan.">Check prices</button></div>
+    <div id="pSaved"><p class="muted">No saved plans yet.</p></div>
+  </div>
+  <p class="note">A calculator for common risk rules, not advice. Prices are from the last fetch and can move before you trade. Always place your stop order with your broker.</p>
+</section>
 </main>
 
 <nav>
-  <button class="on" data-t="t-scr"><svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 15l4-5 3 3 5-6"/></svg>Screener</button>
-  <button data-t="t-etf"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Leveraged ETFs</button>
-  <button data-t="t-set"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Settings</button>
+  <button class="on" data-t="t-scr" data-tip="Scan and rank your watchlist."><svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 15l4-5 3 3 5-6"/></svg>Screener</button>
+  <button data-t="t-etf" data-tip="Look up leveraged and inverse ETFs and their multiples. Works offline."><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Leveraged ETFs</button>
+  <button data-t="t-plan" data-tip="Work out entry, stop-loss, position size and exits for one ticker, and track saved plans."><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>Plan</button>
+  <button data-t="t-set" data-tip="API keys, watchlist and score weights."><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Settings</button>
 </nav>
 <div class="toast" id="toast"></div>
+<div id="tip" role="tooltip"></div>
 
 <div id="chartSheet" role="dialog" aria-label="Chart">
   <div class="ch-top"><b id="chSym">–</b><button class="x" id="chClose" aria-label="Close">×</button></div>
   <div class="ch-iv" id="chIv">
-    <button class="chip" data-iv="5">5m</button>
-    <button class="chip" data-iv="60">1h</button>
-    <button class="chip on" data-iv="D">1D</button>
-    <button class="chip" data-iv="W">1W</button>
-    <button class="chip" data-iv="M">1M</button>
+    <button class="chip on" data-iv="Z" data-tip="Doubler's own daily chart with support (green) and resistance (red) zones found automatically, plus the 50-day (blue) and 200-day (amber) averages. Brighter bands are the nearest zones.">Zones</button>
+    <button class="chip" data-iv="5" data-tip="5-minute candles: today's intraday moves.">5m</button>
+    <button class="chip" data-iv="60" data-tip="1-hour candles: the last few weeks.">1h</button>
+    <button class="chip" data-iv="D" data-tip="TradingView live daily chart. Add your own indicators here.">1D</button>
+    <button class="chip" data-iv="W" data-tip="Weekly candles: the bigger trend over years.">1W</button>
+    <button class="chip" data-iv="M" data-tip="Monthly candles: the long-term picture.">1M</button>
   </div>
+  <div id="chInfo"></div>
   <div id="chartBox"></div>
   <div class="ch-links">
-    <a id="lTv" target="_blank" rel="noopener">TradingView</a>
-    <a id="lYh" target="_blank" rel="noopener">Yahoo</a>
-    <a id="lFv" target="_blank" rel="noopener">Finviz</a>
+    <a id="lTv" target="_blank" rel="noopener" data-tip="Open the full TradingView chart (or the TradingView app if installed).">TradingView</a>
+    <a id="lYh" target="_blank" rel="noopener" data-tip="Open Yahoo Finance: news, analyst views, financials. Slower to load.">Yahoo</a>
+    <a id="lFv" target="_blank" rel="noopener" data-tip="Open Finviz: one-page snapshot of key stats, earnings date and recent headlines.">Finviz</a>
   </div>
 </div>
 
@@ -270,10 +359,11 @@ ASTS OKLO SMCI CRWD NET DDOG SNOW SHOP MELI NU
 TMDX AXON DUOL CAVA ELF ONON RDDT ALAB VRT ANET
 CRDO NVDA AMD MU TSLA COIN MSTR SOUN BBAI ACHR
 TQQQ SOXL`;
-const DEFAULT_W = {grow:30, mom:25, vol:20, cap:15, pos:10};
-const W_LABEL = {grow:'Growth', mom:'Momentum', vol:'Range / beta', cap:'Small size', pos:'Near 52w high'};
+const DEFAULT_W = {grow:30, mom:20, rs:20, vol:15, cap:10, pos:5};
+const W_LABEL = {grow:'Growth', mom:'Momentum', rs:'Rel. strength', vol:'Range / beta', cap:'Small size', pos:'Near 52w high'};
 function loadSettings(){
   $('#key').value = LS.get('key','');
+  $('#tdkey').value = LS.get('tdkey','');
   $('#wl').value = LS.get('wl', DEFAULT_WL);
   const w = LS.get('w', DEFAULT_W);
   $('#wts').innerHTML = Object.keys(DEFAULT_W).map(k =>
@@ -282,8 +372,9 @@ function loadSettings(){
 function weights(){
   const w = {}; document.querySelectorAll('[data-w]').forEach(i => w[i.dataset.w] = Math.max(0, +i.value||0)); return w;
 }
-$('#saveBtn').onclick = () => { LS.set('key', $('#key').value.trim()); LS.set('wl', $('#wl').value); LS.set('w', weights()); rescore(); toast('Saved'); };
+$('#saveBtn').onclick = () => { LS.set('key', $('#key').value.trim()); LS.set('tdkey', $('#tdkey').value.trim()); LS.set('wl', $('#wl').value); LS.set('w', weights()); rescore(); toast('Saved'); };
 $('#key').addEventListener('change', () => LS.set('key', $('#key').value.trim()));
+$('#tdkey').addEventListener('change', () => LS.set('tdkey', $('#tdkey').value.trim()));
 $('#resetWl').onclick = () => { $('#wl').value = DEFAULT_WL; LS.set('wl', DEFAULT_WL); toast('Watchlist reset'); };
 document.addEventListener('change', e => { if (e.target.dataset && e.target.dataset.w){ LS.set('w', weights()); rescore(); } });
 
@@ -302,6 +393,7 @@ function components(d){
     vol:  avg([hi && lo ? lin(hi/lo, 1.3, 4) : null, lin(m.beta, 0.8, 2.5)]),
     cap:  capM ? clamp(100 - (Math.log10(capM) - Math.log10(300)) / (Math.log10(200000) - Math.log10(300)) * 100, 0, 100) : null,
     pos:  price && hi ? lin(price/hi, 0.5, 0.95) : null,
+    rs:   d.rs ? lin(d.rs.out, -20, 80) : null,
   };
 }
 function scoreOf(c, w){
@@ -326,40 +418,255 @@ async function fh(path, key){
 }
 function parseWl(){ return [...new Set($('#wl').value.toUpperCase().split(/[\s,;]+/).filter(Boolean))]; }
 
+/* ---------- price history (Twelve Data) & setup signals ---------- */
+const techCache = {}, tdErr = {};
+let tdState = {done:0, total:0, msg:''};
+const sleepStop = async ms => { const end = Date.now()+ms; while (Date.now() < end && !stopFlag) await sleep(500); };
+function parseTd(values){
+  const v = values.slice().reverse();  // API returns newest first
+  return { d:v.map(x=>x.datetime), o:v.map(x=>+x.open), c:v.map(x=>+x.close), h:v.map(x=>+x.high), l:v.map(x=>+x.low), v:v.map(x=>+x.volume) };
+}
+async function tdBatch(syms, key){
+  const r = await fetch(`https://api.twelvedata.com/time_series?symbol=${syms.map(encodeURIComponent).join(',')}&interval=1day&outputsize=260&apikey=${encodeURIComponent(key)}`);
+  if (!r.ok) throw new Error('Twelve Data HTTP '+r.status);
+  const j = await r.json();
+  if (j.status === 'error') throw new Error(j.message || 'Twelve Data error');
+  return syms.length === 1 ? {[syms[0]]: j} : j;
+}
+async function tdLoop(list, key, onUpdate){
+  const need = list.filter(t => {
+    const c = LS.get('td_'+t, null);
+    if (c && Date.now()-c.at < 6*3600e3){ techCache[t] = c.b; return false; }
+    return true;
+  });
+  tdState = {done:list.length-need.length, total:list.length, msg:''};
+  onUpdate();
+  let retries = 0;
+  for (let i=0; i<need.length && !stopFlag; i+=8){
+    const batch = need.slice(i, i+8), t0 = Date.now();
+    try{
+      const m = await tdBatch(batch, key);
+      for (const sym of batch){
+        const e = m[sym];
+        if (e && e.status !== 'error' && Array.isArray(e.values)){
+          const bars = parseTd(e.values); techCache[sym] = bars;
+          LS.set('td_'+sym, {at:Date.now(), b:bars});
+        } else tdErr[sym] = (e && e.message) || 'No price history';
+      }
+    }catch(err){
+      if (/minute/i.test(err.message) && retries < 3){ retries++; await sleepStop(61000); i -= 8; continue; }
+      tdState.msg = 'History: ' + err.message; onUpdate(); break;
+    }
+    retries = 0;
+    tdState.done += batch.length; onUpdate();
+    if (i+8 < need.length) await sleepStop(Math.max(0, 61000-(Date.now()-t0)));
+  }
+}
+const smaN = (a, n, end=a.length) => { if (end < n) return null; let s=0; for (let i=end-n; i<end; i++) s += a[i]; return s/n; };
+const BASE_DAYS = 25, BASE_MAX = 20, VOL_X = 1.5;
+function techFrom(b){
+  const {c, h, l, v} = b, n = c.length;
+  if (n < 60) return null;
+  const last = c[n-1];
+  const s50 = smaN(c,50), s50p = smaN(c,50,n-10);
+  const s200 = n>=200 ? smaN(c,200) : null, s200p = n>=220 ? smaN(c,200,n-20) : null;
+  const t = { asOf:b.d[n-1], last, s50, s200,
+    a50: last > s50, r50: s50p!=null ? s50 > s50p : null,
+    a200: s200!=null ? last > s200 : null, r200: s200p!=null ? s200 > s200p : null,
+    s50chg: s50p ? (s50/s50p-1)*100 : null, s200chg: s200p ? (s200/s200p-1)*100 : null,
+    ext: s50 ? (last/s50-1)*100 : null };
+  t.trendPts = [t.a50, t.r50, t.a200, t.r200].filter(x => x===true).length;
+  const base = i => { const s0 = i-BASE_DAYS; if (s0 < 0) return null;
+    const hi = Math.max(...h.slice(s0,i)), lo = Math.min(...l.slice(s0,i)); return {hi, lo, depth:(hi-lo)/hi*100}; };
+  t.brk = null;
+  for (let k=0; k<3; k++){            // breakout today or in the last 2 sessions
+    const i = n-1-k, bs = base(i); if (!bs) break;
+    if (bs.depth <= BASE_MAX && c[i] > bs.hi){
+      const av = smaN(v, 50, i);
+      t.brk = {daysAgo:k, pivot:bs.hi, depth:bs.depth, volx: av ? v[i]/av : null, holding: last > bs.hi};
+      break;
+    }
+  }
+  if (!t.brk){ const bs = base(n); if (bs) t.base = {...bs, tight: bs.depth <= BASE_MAX, toPivot:(last/bs.hi-1)*100}; }
+  const av50 = smaN(v, 50, n-1); t.volToday = av50 ? v[n-1]/av50 : null;
+  t.sr = srZones(b); t.near = nearSR(t.sr, last);
+  return t;
+}
+/* Support/resistance zones: swing highs/lows (5 bars each side) grouped when within max(1.2%, 0.5×ATR) */
+function srZones(b){
+  const {h, l, c} = b, n = c.length; if (n < 40) return null;
+  let atr = 0; for (let i=n-14; i<n; i++) atr += Math.max(h[i]-l[i], Math.abs(h[i]-c[i-1]), Math.abs(l[i]-c[i-1])); atr /= 14;
+  const W = 5, piv = [];
+  for (let i=W; i<n; i++){
+    const R = Math.min(W, n-1-i); if (R < 2) break;
+    let isH = true, isL = true;
+    for (let j=i-W; j<=i+R; j++){ if (j===i) continue; if (h[j] > h[i]) isH = false; if (l[j] < l[i]) isL = false; }
+    if (isH) piv.push({p:h[i], i}); if (isL) piv.push({p:l[i], i});
+  }
+  piv.sort((a,b) => a.p-b.p);
+  const last = c[n-1], tol = Math.max(last*0.012, atr*0.5), cl = [];
+  for (const q of piv){ const k = cl[cl.length-1]; if (k && q.p - k.lo <= tol) k.m.push(q); else cl.push({lo:q.p, m:[q]}); }
+  const zones = cl.map(k => {
+    const ps = k.m.map(x => x.p); let lo = Math.min(...ps), hi = Math.max(...ps);
+    const minW = atr*0.25; if (hi-lo < minW){ const mid = (lo+hi)/2; lo = mid-minW/2; hi = mid+minW/2; }
+    const age = n-1-Math.max(...k.m.map(x => x.i));
+    return {lo, hi, touches:k.m.length, age, str:k.m.length + (age < 60 ? 1 : 0)};
+  }).filter(z => z.touches >= 2 || z.age < 40);
+  return {zones, atr};
+}
+function nearSR(sr, ref){
+  if (!sr) return {};
+  let sup = null, res = null;
+  for (const z of sr.zones){ const mid = (z.lo+z.hi)/2; if (mid < ref){ if (!sup || z.hi > sup.hi) sup = z; } else if (!res || z.lo < res.lo) res = z; }
+  return {sup, res, supPct: sup ? (Math.min(sup.hi, ref)/ref-1)*100 : null, resPct: res ? (Math.max(res.lo, ref)/ref-1)*100 : null};
+}
+function srText(nr){
+  const z = (x, p) => `$${(+x.lo).toFixed(2)}–$${(+x.hi).toFixed(2)} (${p>=0?'+':''}${p.toFixed(1)}%, ${x.touches} touch${x.touches>1?'es':''})`;
+  return `Support ${nr.sup ? z(nr.sup, nr.supPct) : 'none found below'} · Resistance ${nr.res ? z(nr.res, nr.resPct) : 'none overhead'}`;
+}
+const daysTo = d => Math.round((Date.parse(d+'T00:00:00') - new Date(new Date().toDateString()).getTime())/864e5);
+function sig(r){
+  const t = r.tech, e = r.earn, s = {};
+  if (t){
+    s.trend = t.trendPts===4 ? ['Uptrend 4/4','g'] : t.trendPts>=2 ? [`Trend ${t.trendPts}/4`,'w'] : [`Downtrend ${t.trendPts}/4`,'b'];
+    if (t.brk){
+      const vx = t.brk.volx!=null ? t.brk.volx.toFixed(1)+'×' : '?';
+      s.brk = !t.brk.holding ? ['Failed breakout','b'] : (t.brk.volx>=VOL_X ? [`Breakout ${vx} vol`,'g'] : [`Breakout, low vol ${vx}`,'w']);
+    } else if (t.base && t.base.tight){
+      s.brk = [`Base, ${Math.abs(t.base.toPivot).toFixed(0)}% under pivot`, t.base.toPivot >= -5 ? 'g' : 'n'];
+    } else s.brk = ['No base','n'];
+    if (t.ext!=null) s.ext = t.ext<0 ? [`${t.ext.toFixed(0)}% below 50d`,'b'] : t.ext<=10 ? [`+${t.ext.toFixed(0)}% vs 50d`,'g'] : t.ext<=25 ? [`+${t.ext.toFixed(0)}% extended`,'w'] : [`+${t.ext.toFixed(0)}% very extended`,'b'];
+  }
+  if (e){
+    if (e.none) s.earn = ['No earnings <120d','n'];
+    else { const d = daysTo(e.date); s.earnDays = d; s.earn = [d<0 ? 'Earnings just passed' : d===0 ? 'Earnings today' : `Earnings in ${d}d`, d<=7 && d>=0 ? 'b' : d<=21 && d>=0 ? 'w' : 'n']; }
+  }
+  if (t){
+    const checks = [
+      t.trendPts===4,
+      (t.brk && t.brk.holding && t.brk.volx>=VOL_X) || (!t.brk && t.base && t.base.tight && t.base.toPivot >= -5),
+      t.ext!=null && t.ext>=0 && t.ext<=10,
+      e ? (e.none || s.earnDays>7 || s.earnDays<0) : false ];
+    s.checks = checks; s.n = checks.filter(Boolean).length;
+  }
+  return s;
+}
+
 $('#scanBtn').onclick = async () => {
   const key = $('#key').value.trim() || LS.get('key','');
+  const tdKey = $('#tdkey').value.trim() || LS.get('tdkey','');
   if (!key){ toast('Add your Finnhub key in Settings'); switchTab('t-set'); return; }
   const list = parseWl();
   if (!list.length){ toast('Watchlist is empty'); return; }
   if (!navigator.onLine){ toast('You are offline'); return; }
   stopFlag = false; $('#scanBtn').disabled = true; $('#stopBtn').disabled = false;
-  const out = []; let fails = 0;
+  const out = []; let fails = 0, fhDone = 0;
+  const stocks = list.filter(t => !LEV[t]);
+  const tdList = [...new Set(['SPY','QQQ', ...stocks])];
+  tdState = {done:0, total: tdKey ? tdList.length : 0, msg: tdKey ? '' : 'No Twelve Data key: trend and breakout checks skipped'};
+  const upd = () => {
+    const tot = list.length + tdState.total, done = fhDone + tdState.done;
+    $('#prog').style.width = (tot ? done/tot*100 : 0) + '%';
+    $('#status').textContent = `Prices ${fhDone}/${list.length}` + (tdKey ? ` · History ${tdState.done}/${tdState.total}` : '') + (tdState.msg ? ` · ${tdState.msg}` : '');
+    rescore(false);
+  };
+  const tdP = tdKey ? tdLoop(tdList, tdKey, upd) : Promise.resolve();
+  const today = new Date(), iso = d => d.toISOString().slice(0,10);
   for (let i=0; i<list.length && !stopFlag; i++){
     const t = list[i];
-    $('#status').textContent = `Scanning ${t} (${i+1}/${list.length})…`;
-    $('#prog').style.width = (i/list.length*100)+'%';
-    if (LEV[t]){ out.push({t, lev:LEV[t]}); continue; }
+    if (LEV[t]){ out.push({t, lev:LEV[t]}); fhDone++; results = out.slice(); upd(); continue; }
     try{
       const q = await fh(`quote?symbol=${t}`, key); await sleep(1050);
       const mt = await fh(`stock/metric?symbol=${t}&metric=all`, key); await sleep(1050);
-      if (!q || !q.c){ fails++; out.push({t, err:'No data'}); continue; }
-      out.push({t, price:q.c, dp:q.dp, m:mt.metric||{}});
+      if (!q || !q.c){ fails++; out.push({t, err:'No data'}); }
+      else {
+        let earn = null;
+        const ec = LS.get('earn_'+t, null);
+        if (ec && Date.now()-ec.at < 12*3600e3) earn = ec.e;
+        else {
+          try{
+            const j = await fh(`calendar/earnings?from=${iso(today)}&to=${iso(new Date(Date.now()+120*864e5))}&symbol=${t}`, key); await sleep(1050);
+            const ev = (j.earningsCalendar||[]).filter(x => x.date && x.symbol===t).sort((a,b) => a.date < b.date ? -1 : 1);
+            earn = ev[0] ? {date:ev[0].date, hour:ev[0].hour||''} : {none:true};
+            LS.set('earn_'+t, {at:Date.now(), e:earn});
+          }catch(e){ earn = null; }
+        }
+        out.push({t, price:q.c, dp:q.dp, m:mt.metric||{}, earn});
+      }
     }catch(e){
       fails++; out.push({t, err:e.message});
-      if (/Key rejected/.test(e.message)){ $('#status').textContent = e.message; break; }
+      if (/Key rejected/.test(e.message)){ stopFlag = true; tdState.msg = e.message; }
     }
-    results = out.slice(); rescore(false);
+    fhDone++; results = out.slice(); upd();
   }
+  if (tdKey && !stopFlag && tdState.done < tdState.total) $('#status').textContent += ' · waiting for price history (8 tickers/min)…';
+  await tdP;
   $('#prog').style.width = '100%';
   results = out; LS.set('results', results); LS.set('scanAt', Date.now()); rescore();
-  $('#status').textContent = `${stopFlag?'Stopped':'Done'} · ${out.length} tickers${fails?`, ${fails} without data`:''} · ${new Date().toLocaleString()}`;
+  $('#status').textContent = `${stopFlag?'Stopped':'Done'} · ${out.length} tickers${fails?`, ${fails} without data`:''}${tdState.msg?' · '+tdState.msg:''} · ${new Date().toLocaleString()}`;
   $('#scanBtn').disabled = false; $('#stopBtn').disabled = true;
 };
 $('#stopBtn').onclick = () => { stopFlag = true; };
 
+/* ---------- market direction & relative strength ---------- */
+function barsFor(t){ if (techCache[t]) return techCache[t]; const c = LS.get('td_'+t, null); if (c){ techCache[t] = c.b; return c.b; } return null; }
+function rsCalc(b, spy){
+  if (!b || !spy) return null;
+  const m = new Map(spy.d.map((d,i) => [d.slice(0,10), spy.c[i]]));
+  const sc = [], mc = [];
+  b.d.forEach((d,i) => { const x = m.get(d.slice(0,10)); if (x){ sc.push(b.c[i]); mc.push(x); } });
+  const n = sc.length; if (n < 70) return null;
+  const ret = (a,k) => k < a.length ? a[a.length-1]/a[a.length-1-k] - 1 : null;
+  let ws = 0, wm = 0, wt = 0;
+  [[63,.4],[126,.2],[189,.2],[252,.2]].forEach(([k,wgt]) => { const a = ret(sc,k), z = ret(mc,k); if (a!=null && z!=null){ ws += a*wgt; wm += z*wgt; wt += wgt; } });
+  if (!wt) return null;
+  ws /= wt; wm /= wt;
+  const ratio = sc.map((x,i) => x/mc[i]);
+  const rel = k => { const a = ret(sc,k), z = ret(mc,k); return a!=null && z!=null ? ((1+a)/(1+z)-1)*100 : null; };
+  const look = ratio.slice(-252), newHigh = n >= 120 && ratio[n-1] >= Math.max(...look)*0.99;
+  return {out:((1+ws)/(1+wm)-1)*100, r3:rel(63), r6:rel(126), r12:rel(252), newHigh};
+}
+function idxState(b){
+  const t = b && techFrom(b); if (!t) return null;
+  const {c, v} = b, n = c.length; let dd = 0;
+  for (let i=n-25; i<n; i++) if (c[i] < c[i-1]*0.998 && v[i] > v[i-1]) dd++;
+  return {...t, dd, pts:[t.a50, t.r50, t.a200].filter(x => x===true).length};
+}
+function marketState(){
+  const spy = idxState(barsFor('SPY')), qqq = idxState(barsFor('QQQ'));
+  if (!spy && !qqq) return null;
+  const xs = [spy, qqq].filter(Boolean), pts = xs.reduce((a,x) => a+x.pts, 0), max = xs.length*3;
+  const dd = spy ? spy.dd : qqq.dd;
+  let st = pts >= max-1 ? 'up' : pts <= Math.floor(max/3) ? 'down' : 'caution', why = '';
+  if (st === 'up' && dd >= 5){ st = 'caution'; why = `${dd} heavy-selling days in the last 25 sessions`; }
+  return {st, spy, qqq, dd, why, asOf:(spy||qqq).asOf};
+}
+const MKT = {
+  up:      ['Market: Uptrend', 'g', 'Breakouts work best now. Normal position sizes.'],
+  caution: ['Market: Caution', 'w', 'Mixed signals. Be selective and consider half-size positions.'],
+  down:    ['Market: Downtrend', 'b', 'Most breakouts fail in a falling market. Many traders make no new buys and tighten stops.']
+};
+function renderMarket(){
+  const m = marketState();
+  const ok = v => v==null ? '–' : v ? '✓' : '✗';
+  const line = (nm, x) => x ? `<b>${nm}</b> $${x.last.toFixed(2)} · ${x.ext>=0?'+':''}${x.ext.toFixed(1)}% vs 50d · above 50d ${ok(x.a50)} rising ${ok(x.r50)} · above 200d ${ok(x.a200)}` : '';
+  const html = !m
+    ? `<div class="hd"><b>Market: unknown</b></div><div class="ix">Scan with a Twelve Data key to read the S&amp;P 500 (SPY) and Nasdaq-100 (QQQ) trend.</div>`
+    : `<div class="hd"><b>${MKT[m.st][0]}</b><span class="pill ${MKT[m.st][1]}">${m.dd} selling day${m.dd===1?'':'s'}</span></div>
+       <div class="ix">${[line('SPY', m.spy), line('QQQ', m.qqq)].filter(Boolean).join('<br>')}</div>
+       <div class="adv">${MKT[m.st][2]}${m.why ? ` <span class="muted">(${m.why})</span>` : ''}</div>
+       <div class="ix" style="font-size:11.5px">Daily bars to ${m.asOf}</div>`;
+  const tip = 'Market direction from SPY and QQQ: price above the 50-day, 50-day rising, price above the 200-day. Selling days = sessions in the last 25 where SPY fell 0.2%+ on higher volume than the day before; 5 or more is a warning sign.';
+  ['#mktScr', '#mktPlan'].forEach(id => { const el = $(id); if (!el) return; el.className = 'mkt ' + (m ? m.st : ''); el.innerHTML = html; el.dataset.tip = tip; });
+}
 function rescore(save=true){
   const w = weights();
+  const spyB = barsFor('SPY');
+  results.forEach(r => { if (r.m){ const b = barsFor(r.t); if (b){ r.tech = techFrom(b); r.rs = rsCalc(b, spyB); } } });
+  const outs = results.filter(r => r.rs).map(r => r.rs.out).sort((a,b) => a-b);
+  results.forEach(r => { if (r.rs){ const below = outs.filter(x => x < r.rs.out).length; r.rs.rank = outs.length > 1 ? Math.round(1 + 98*below/(outs.length-1)) : null; } });
   results.forEach(r => { if (r.m){ r.c = components(r); r.score = scoreOf(r.c, w); } });
+  renderMarket();
   if (save) LS.set('results', results);
   renderResults();
 }
@@ -372,8 +679,10 @@ function renderResults(){
   const key = {
     score: r => r.score ?? -1,
     mom: r => r.m?.['26WeekPriceReturnDaily'] ?? -1e9,
+    rs: r => r.rs?.out ?? -1e9,
     grow: r => r.m?.revenueGrowthTTMYoy ?? -1e9,
     cap: r => -(r.m?.marketCapitalization ?? 1e12),
+    setup: r => (sig(r).n ?? -1) * 1000 + (r.score ?? 0),
   }[sortKey];
   const ranked = results.filter(r => r.m).sort((a,b) => key(b)-key(a));
   const lev = results.filter(r => r.lev), bad = results.filter(r => r.err);
@@ -381,34 +690,147 @@ function renderResults(){
   ranked.forEach((r,i) => {
     const m = r.m;
     h += `<div class="res" data-i="${r.t}">
-      <div class="score" style="border-color:${scoreColor(r.score)}">${r.score ?? '–'}</div>
-      <div><div class="t">${i+1}. ${r.t}</div><div class="s">${capFmt(m.marketCapitalization)} · 6M ${pct(m['26WeekPriceReturnDaily'])} · Rev ${pct(m.revenueGrowthTTMYoy)}</div></div>
+      <div class="score" style="border-color:${scoreColor(r.score)}" data-tip="Doubling score 0–100. Green 70+, amber 50–69, red under 50. Tap the row to see what it is made of.">${r.score ?? '–'}</div>
+      <div class="mid"><div class="t">${i+1}. ${r.t}</div><div class="s">${capFmt(m.marketCapitalization)} · 6M ${pct(m['26WeekPriceReturnDaily'])} · Rev ${pct(m.revenueGrowthTTMYoy)}</div>${tagsHtml(r)}</div>
       <div class="r"><div>$${(+r.price).toFixed(2)}</div><div class="${r.dp>=0?'up':'dn'}" style="font-size:12.5px">${pct(r.dp)}</div></div>
       ${chartBtn(r.t)}
     </div><div class="detail" id="d-${r.t}">${detailHtml(r)}</div>`;
   });
   lev.forEach(r => {
     h += `<div class="res"><div class="score" style="border-color:var(--warn);font-size:12px">${fmtMult(r.lev.mult)}</div>
-      <div><div class="t">${r.t}<span class="tag lev">leveraged</span></div><div class="s">Tracks ${r.lev.base} · not ranked</div></div><span style="margin-left:auto"></span>${chartBtn(r.t)}</div>`;
+      <div><div class="t">${r.t}<span class="tag lev" data-tip="A leveraged ETF. It moves a multiple of its index each day, so it is not ranked against normal stocks.">leveraged</span></div><div class="s">Tracks ${r.lev.base} · not ranked</div></div><span style="margin-left:auto"></span>${chartBtn(r.t)}</div>`;
   });
   bad.forEach(r => { h += `<div class="res"><div class="score">?</div><div><div class="t">${r.t}</div><div class="s">${r.err}</div></div></div>`; });
   $('#results').innerHTML = h;
+}
+function tagsHtml(r){
+  const s = sig(r);
+  const tg = (x, tip) => x ? `<span class="tag ${x[1]}" data-tip="${tip}">${x[0]}</span>` : '';
+  const TIP = {
+    setup: 'Setup checks passed out of 4: uptrend, breakout or near pivot, not stretched above the 50-day, no earnings within 7 days.',
+    trend: 'Points out of 4 for: price above 50-day average, 50-day rising, price above 200-day average, 200-day rising. 4/4 is a clean uptrend.',
+    brk: 'Breakout: closed above the top of a sideways 25-day range (≤20% high to low) in the last 3 days. Green needs volume ≥1.5× the 50-day average. Base: still inside the range; the pivot is its top.',
+    ext: 'How far price is above its 50-day average. Up to +10% is a calmer entry; above +25% often pulls back first.',
+    earn: 'Days to the next earnings report. Red within 7 days: price can jump or drop 20% overnight.'
+  };
+  let srTag = '';
+  const nr = r.tech?.near;
+  if (nr && (nr.sup || nr.res)){
+    const txt = `S ${nr.sup ? nr.supPct.toFixed(0)+'%' : '–'} · R ${nr.res ? '+'+nr.resPct.toFixed(0)+'%' : 'none'}`;
+    srTag = tg([txt, !nr.res ? 'g' : nr.resPct < 5 ? 'w' : 'n'], 'Distance to the nearest support zone below (S) and resistance zone above (R). Amber: resistance is less than 5% overhead, so sellers may cap the move. R none: no resistance overhead. Open the chart (Zones view) to see them.');
+  }
+  const head = s.n!=null ? tg([`Setup ${s.n}/4`, s.n===4?'g':s.n===3?'w':'n'], TIP.setup) : '';
+  const h = head + tg(s.trend, TIP.trend) + (r.rs ? tg([`RS ${r.rs.out>=0?'+':''}${r.rs.out.toFixed(0)}%${r.rs.newHigh?' · new high':''}`, r.rs.out>=20 || r.rs.newHigh ? 'g' : r.rs.out>=0 ? 'w' : 'b'], 'Relative strength: weighted 3–12 month return compared with the S&P 500 (recent 3 months count double). +20% or more is a market leader. New high: the stock-vs-S&P line is at a 52-week high, often seen before big moves.') : '') + tg(s.brk, TIP.brk) + tg(s.ext, TIP.ext) + srTag + tg(s.earn, TIP.earn);
+  return h ? `<div class="tags">${h}</div>` : '';
+}
+function setupHtml(r){
+  const t = r.tech, e = r.earn, f = v => v==null ? '–' : (+v).toFixed(2);
+  const ok = v => v==null ? '<span class="muted">n/a</span>' : v ? '<span class="up">✓</span>' : '<span class="dn">✗</span>';
+  let h = '<div class="setup">';
+  if (t){
+    h += `<div><b>Trend</b> · above 50-day ($${f(t.s50)}) ${ok(t.a50)}, rising ${ok(t.r50)} <span class="muted">${pct(t.s50chg)} in 10d</span></div>`;
+    h += `<div style="padding-left:52px">above 200-day (${t.s200?'$'+f(t.s200):'not enough history'}) ${ok(t.a200)}, rising ${ok(t.r200)} <span class="muted">${pct(t.s200chg)} in 20d</span></div>`;
+    if (t.brk) h += `<div><b>Breakout</b> · closed above $${f(t.brk.pivot)} ${t.brk.daysAgo===0?'today':t.brk.daysAgo+'d ago'} after a ${t.brk.depth.toFixed(0)}% base, volume ${t.brk.volx!=null?t.brk.volx.toFixed(1)+'× avg':'n/a'} ${ok(t.brk.volx>=VOL_X)}${t.brk.holding?'':' · <span class="dn">now back below pivot</span>'}</div>`;
+    else if (t.base) h += `<div><b>Base</b> · ${BASE_DAYS}-day range ${t.base.depth.toFixed(0)}% ${t.base.tight?'(sideways)':'(too wide to be a base)'} · pivot $${f(t.base.hi)}, price ${Math.abs(t.base.toPivot).toFixed(1)}% under · today's vol ${t.volToday!=null?t.volToday.toFixed(1)+'× avg':'n/a'}</div>`;
+    h += `<div><b>Stretch</b> · ${pct(t.ext)} from 50-day ${ok(t.ext!=null && t.ext>=0 && t.ext<=10)} <span class="muted">(≤10% is a calmer entry)</span></div>`;
+  } else {
+    h += `<div class="muted">${LS.get('tdkey','') ? (tdErr[r.t] ? 'Price history: '+tdErr[r.t] : 'Price history not loaded yet.') : 'Add a Twelve Data key in Settings to see trend, base and breakout checks.'}</div>`;
+  }
+  if (e){
+    const when = e.hour==='bmo' ? ' before open' : e.hour==='amc' ? ' after close' : '';
+    h += e.none ? `<div><b>Earnings</b> · none scheduled in the next 120 days</div>`
+                : `<div><b>Earnings</b> · ${e.date}${when} · ${(d => d<0 ? 'just passed' : d===0 ? 'today' : 'in '+d+' days')(daysTo(e.date))} ${ok(!(daysTo(e.date)>=0 && daysTo(e.date)<=7))}</div>`;
+  }
+  if (r.rs) h += `<div><b>Rel. strength</b> · ${pct(r.rs.out)} vs S&amp;P (weighted) · 3M ${pct(r.rs.r3)} · 6M ${pct(r.rs.r6)} · 12M ${pct(r.rs.r12)}${r.rs.rank!=null?` · rank ${r.rs.rank}/99 in your list`:''}${r.rs.newHigh?' · <span class="up">RS line at new high</span>':''}</div>`;
+  if (t?.near) h += `<div><b>Zones</b> · ${srText(t.near)}</div>`;
+  if (t) h += `<div class="muted">Daily bars to ${t.asOf}</div>`;
+  return h + '</div>';
 }
 function detailHtml(r){
   const c = r.c || {}, m = r.m;
   const bars = Object.keys(W_LABEL).map(k => `<div class="comp"><span>${W_LABEL[k]}</span><div class="b"><i style="width:${c[k]??0}%"></i></div><span>${c[k]==null?'–':Math.round(c[k])}</span></div>`).join('');
   const f = v => v==null ? '–' : (+v).toFixed(2);
-  return `${bars}<div class="muted" style="margin-top:8px">52w ${f(m['52WeekLow'])} – ${f(m['52WeekHigh'])} · β ${f(m.beta)} · 3M ${pct(m['13WeekPriceReturnDaily'])} · EPS gr ${pct(m.epsGrowthTTMYoy)} · P/S ${f(m.psTTM)}</div>`;
+  return `${bars}<div class="muted" style="margin-top:8px">52w ${f(m['52WeekLow'])} – ${f(m['52WeekHigh'])} · β ${f(m.beta)} · 3M ${pct(m['13WeekPriceReturnDaily'])} · EPS gr ${pct(m.epsGrowthTTMYoy)} · P/S ${f(m.psTTM)}</div>${setupHtml(r)}<button class="btn ghost" data-plan="${r.t}" style="margin-top:10px;width:100%" data-tip="Open the Plan tab with ${r.t} loaded: entry, stop, share count and exits.">Make trade plan</button>`;
 }
 /* ---------- charts ---------- */
 // Tickers TradingView would otherwise resolve to the wrong instrument (e.g. USD = currency)
 const TV_FIX = {USD:'AMEX:USD', SH:'AMEX:SH', DOG:'AMEX:DOG', ROM:'AMEX:ROM', UBT:'AMEX:UBT', UGL:'AMEX:UGL', GLL:'AMEX:GLL'};
 const tvSym = t => TV_FIX[t] || t;
 function chartBtn(t){
-  return `<button class="cbtn" data-chart="${t}" aria-label="Chart ${t}"><svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M7 14l3-4 3 3 5-6"/></svg></button>`;
+  return `<button class="cbtn" data-chart="${t}" aria-label="Chart ${t}" data-tip="Open a live chart for ${t}."><svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M7 14l3-4 3 3 5-6"/></svg></button>`;
 }
-let chT = null, chIv = 'D';
+let chT = null, chIv = 'Z';
+const LWC_URL = 'https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js';
+let lwcP = null, zchart = null, zraf = 0;
+function loadLwc(){
+  if (window.LightweightCharts) return Promise.resolve();
+  if (!lwcP) lwcP = new Promise((res, rej) => { const sc = document.createElement('script'); sc.src = LWC_URL; sc.onload = res; sc.onerror = () => { lwcP = null; rej(new Error('Chart library could not load')); }; document.head.appendChild(sc); });
+  return lwcP;
+}
+async function getBars(t){
+  if (techCache[t]) return techCache[t];
+  const c = LS.get('td_'+t, null);
+  if (c && Date.now()-c.at < 6*3600e3) return (techCache[t] = c.b);
+  const k = LS.get('tdkey','');
+  if (k && navigator.onLine){
+    try{ const m = await tdBatch([t], k); const e = m[t];
+      if (e && Array.isArray(e.values)){ const b = parseTd(e.values); techCache[t] = b; LS.set('td_'+t, {at:Date.now(), b}); return b; } }catch(e){}
+  }
+  return c ? c.b : null;
+}
+function destroyZ(){ cancelAnimationFrame(zraf); zraf = 0; if (zchart){ try{ zchart.remove(); }catch(e){} zchart = null; } }
+async function drawZoneChart(){
+  const box = $('#chartBox'), t0 = chT;
+  box.innerHTML = '<div class="ld">Loading chart…</div>'; $('#chInfo').textContent = '';
+  let b;
+  try{ [b] = await Promise.all([getBars(chT), loadLwc()]); }
+  catch(e){ box.innerHTML = `<div class="ld">${e.message}. Try the 1D TradingView view.</div>`; return; }
+  if (chT !== t0 || chIv !== 'Z' || !$('#chartSheet').classList.contains('on')) return;
+  if (!b){ box.innerHTML = '<div class="ld" style="padding:20px;text-align:center">No price history for zones. Add a Twelve Data key in Settings, or use the 1D TradingView view.</div>'; return; }
+  box.innerHTML = '';
+  const el = document.createElement('div'); el.style.cssText = 'position:absolute;inset:0'; box.appendChild(el);
+  const layer = document.createElement('div'); layer.className = 'zlayer'; box.appendChild(layer);
+  const n = b.c.length, day = i => b.d[i].slice(0,10);
+  zchart = LightweightCharts.createChart(el, {autoSize:true,
+    layout:{background:{type:'solid', color:'#0f1417'}, textColor:'#8a9aa3', fontSize:11},
+    grid:{vertLines:{color:'#1a2328'}, horzLines:{color:'#1a2328'}},
+    rightPriceScale:{borderColor:'#2a353b', scaleMargins:{top:0.06, bottom:0.22}},
+    timeScale:{borderColor:'#2a353b'}, crosshair:{mode:0}});
+  const cs = zchart.addCandlestickSeries({upColor:'#3ccf91', downColor:'#ef6b5b', wickUpColor:'#3ccf91', wickDownColor:'#ef6b5b', borderVisible:false});
+  cs.setData(b.c.map((x,i) => ({time:day(i), open: b.o ? b.o[i] : (i ? b.c[i-1] : x), high:b.h[i], low:b.l[i], close:x})));
+  const vs = zchart.addHistogramSeries({priceFormat:{type:'volume'}, priceScaleId:'vol', lastValueVisible:false, priceLineVisible:false});
+  zchart.priceScale('vol').applyOptions({scaleMargins:{top:0.82, bottom:0}});
+  vs.setData(b.v.map((x,i) => ({time:day(i), value:x, color: b.c[i] >= (i ? b.c[i-1] : b.c[i]) ? 'rgba(60,207,145,.35)' : 'rgba(239,107,91,.35)'})));
+  const ma = (N, col) => { const ls = zchart.addLineSeries({color:col, lineWidth:2, priceLineVisible:false, lastValueVisible:false, crosshairMarkerVisible:false});
+    const data = []; for (let i=N-1; i<n; i++) data.push({time:day(i), value:smaN(b.c, N, i+1)}); ls.setData(data); };
+  if (n >= 50) ma(50, '#5aa9e6'); if (n >= 200) ma(200, '#e8b54a');
+  zchart.timeScale().setVisibleLogicalRange({from:Math.max(0, n-130), to:n+4});
+  const last = b.c[n-1], sr = srZones(b), nr = nearSR(sr, last);
+  const zs = (sr?.zones || []).filter(z => z.touches >= 2).sort((a,z) => z.str-a.str).slice(0, 5);
+  [nr.sup, nr.res].forEach(z => { if (z && !zs.includes(z)) zs.push(z); });
+  const bands = zs.map(z => {
+    const isS = (z.lo+z.hi)/2 < last, d = document.createElement('div');
+    d.className = 'zband ' + (isS ? 'zs' : 'zr') + (z === nr.sup || z === nr.res ? ' zk' : '');
+    d.innerHTML = `<span>${isS ? 'S' : 'R'} ${z.touches}×</span>`; layer.appendChild(d); return {z, d};
+  });
+  const tick = () => {
+    if (!zchart) return;
+    const w = el.clientWidth - zchart.priceScale('right').width(), hg = (el.clientHeight - zchart.timeScale().height()) * 0.8;  // keep out of the volume pane
+    for (const {z, d} of bands){
+      let y1 = cs.priceToCoordinate(z.hi), y2 = cs.priceToCoordinate(z.lo);
+      if (y1 == null || y2 == null || y2 < 0 || y1 > hg){ d.style.display = 'none'; continue; }
+      if (y2-y1 < 4){ const m = (y1+y2)/2; y1 = m-2; y2 = m+2; }
+      d.style.display = 'block'; d.style.top = Math.max(0, y1)+'px'; d.style.height = (Math.min(hg, y2)-Math.max(0, y1))+'px'; d.style.width = w+'px';
+    }
+    zraf = requestAnimationFrame(tick);
+  };
+  tick();
+  $('#chInfo').innerHTML = `${srText(nr)}<br><span style="color:#5aa9e6">━ 50-day</span> &nbsp;<span style="color:#e8b54a">━ 200-day</span> &nbsp;· daily bars to ${day(n-1)}`;
+}
 function drawChart(){
+  destroyZ();
+  if (chIv === 'Z') return drawZoneChart();
+  $('#chInfo').textContent = 'TradingView live chart';
   const box = $('#chartBox');
   box.innerHTML = '<div class="ld">Loading chart…</div>';
   const wrap = document.createElement('div');
@@ -430,7 +852,8 @@ function drawChart(){
 }
 function openChart(t){
   if (!navigator.onLine){ toast('Charts need internet'); return; }
-  chT = t;
+  chT = t; chIv = 'Z';
+  document.querySelectorAll('#chIv .chip').forEach(c => c.classList.toggle('on', c.dataset.iv === 'Z'));
   $('#chSym').textContent = t + (LEV[t] ? `  ${fmtMult(LEV[t].mult)} ${LEV[t].base}` : '');
   $('#lTv').href = `https://www.tradingview.com/chart/?symbol=${encodeURIComponent(tvSym(t))}`;
   $('#lYh').href = `https://finance.yahoo.com/quote/${encodeURIComponent(t)}/chart`;
@@ -443,7 +866,7 @@ function openChart(t){
 function closeChart(fromPop){
   if (!$('#chartSheet').classList.contains('on')) return;
   $('#chartSheet').classList.remove('on');
-  $('#chartBox').innerHTML = '';
+  destroyZ(); $('#chartBox').innerHTML = '';
   document.body.style.overflow = '';
   if (!fromPop && history.state && history.state.chart) history.back();
 }
@@ -479,6 +902,13 @@ $('#xlsBtn').onclick = () => {
     'Mkt cap ($M)':r.m.marketCapitalization, '6M return %':r.m['26WeekPriceReturnDaily'], '3M return %':r.m['13WeekPriceReturnDaily'],
     'Rev growth TTM %':r.m.revenueGrowthTTMYoy, 'Rev growth Q %':r.m.revenueGrowthQuarterlyYoy, 'EPS growth TTM %':r.m.epsGrowthTTMYoy,
     '52w low':r.m['52WeekLow'], '52w high':r.m['52WeekHigh'], Beta:r.m.beta, 'P/S':r.m.psTTM,
+    ...(() => { const s = sig(r), t = r.tech || {}, yn = v => v==null ? '' : v ? 'Y' : 'N'; return {
+      'Setup /4': s.n, 'Above 50d': yn(t.a50), '50d rising': yn(t.r50), 'Above 200d': yn(t.a200), '200d rising': yn(t.r200),
+      '% vs 50d': t.ext!=null ? +t.ext.toFixed(1) : '', 'Base / breakout': s.brk ? s.brk[0] : '',
+      'Next earnings': r.earn && !r.earn.none ? r.earn.date : '', 'Days to earnings': s.earnDays ?? '',
+      'Support zone': t.near?.sup ? `${t.near.sup.lo.toFixed(2)}-${t.near.sup.hi.toFixed(2)}` : '', '% to support': t.near?.supPct!=null ? +t.near.supPct.toFixed(1) : '',
+      'Resistance zone': t.near?.res ? `${t.near.res.lo.toFixed(2)}-${t.near.res.hi.toFixed(2)}` : '', '% to resistance': t.near?.resPct!=null ? +t.near.resPct.toFixed(1) : '',
+      'RS vs S&P %': r.rs ? +r.rs.out.toFixed(1) : '', 'RS rank (list)': r.rs?.rank ?? '', 'RS line new high': r.rs ? (r.rs.newHigh ? 'Y' : 'N') : '', 'RS pts': r.c?.rs ?? '' }; })(),
     'Growth pts':r.c?.grow, 'Momentum pts':r.c?.mom, 'Range pts':r.c?.vol, 'Size pts':r.c?.cap, 'Near-high pts':r.c?.pos,
   }));
   const levRows = []; ETF_GROUPS.forEach(g => g.rows.forEach(r => levRows.push({Group:g.g, Base:r[2]||g.base, Ticker:r[0], Multiple:r[1]})));
@@ -487,6 +917,8 @@ $('#xlsBtn').onclick = () => {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Screener');
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(levRows), 'Leveraged ETFs');
+    const mk = marketState();
+    if (mk) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet([mk.spy, mk.qqq].filter(Boolean).map((x,i) => ({Index:['SPY','QQQ'][i], Price:x.last, '50-day':x.s50, '200-day':x.s200, 'Above 50d':x.a50, '50d rising':x.r50, 'Above 200d':x.a200, 'Selling days (25)':x.dd, Status:MKT[mk.st][0], 'As of':x.asOf}))), 'Market');
     XLSX.writeFile(wb, `doubling_screener_${stamp}.xlsx`);
   } else {
     const cols = Object.keys(rows[0]);
@@ -498,7 +930,7 @@ $('#xlsBtn').onclick = () => {
 
 /* ---------- tabs ---------- */
 const TITLES = {'t-scr':['Doubling Screener','Rank stocks by potential to double in 3–12 months'],
-  't-etf':['Leveraged ETFs','Multiples and base index. Negative = inverse'], 't-set':['Settings','Key, watchlist and score weights']};
+  't-etf':['Leveraged ETFs','Multiples and base index. Negative = inverse'], 't-set':['Settings','Key, watchlist and score weights'], 't-plan':['Trade Plan','Entry, stop-loss, size and exits for one ticker']};
 function switchTab(id){
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t.id===id));
   document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.t===id));
@@ -507,8 +939,268 @@ function switchTab(id){
 }
 document.querySelector('nav').addEventListener('click', e => { const b = e.target.closest('button'); if (b) switchTab(b.dataset.t); });
 
+/* ---------- trade plan ---------- */
+const PCFG_DEF = {acct:10000, risk:1, maxPos:25, stopMode:'auto', stopPct:8, t1:25, trail:20, timeWk:10};
+let pcfg = Object.assign({}, PCFG_DEF, LS.get('pcfg', {}));
+let cur = null, curPlan = null;
+const f2 = v => v==null || !isFinite(v) ? '–' : (+v).toFixed(2);
+const usd = v => v==null || !isFinite(v) ? '–' : '$' + (+v).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+const usd0 = v => '$' + Math.round(v).toLocaleString();
+const PIN = {pAcct:'acct', pRisk:'risk', pStopMode:'stopMode', pStopPct:'stopPct', pMaxPos:'maxPos', pT1:'t1', pTrail:'trail', pTime:'timeWk'};
+function fillCfg(){ for (const id in PIN) $('#'+id).value = pcfg[PIN[id]]; }
+function readCfg(){
+  for (const id in PIN){ const v = $('#'+id).value; pcfg[PIN[id]] = id==='pStopMode' ? v : (+v > 0 ? +v : PCFG_DEF[PIN[id]]); }
+  LS.set('pcfg', pcfg);
+}
+function planList(){
+  const set = new Set(results.filter(r => r.m).map(r => r.t)); parseWl().forEach(t => set.add(t));
+  $('#pList').innerHTML = [...set].map(t => `<option value="${t}">`).join('');
+}
+async function fetchEarn(t, key){
+  const ec = LS.get('earn_'+t, null);
+  if (ec && Date.now()-ec.at < 12*3600e3) return ec.e;
+  const iso = d => d.toISOString().slice(0,10);
+  const j = await fh(`calendar/earnings?from=${iso(new Date())}&to=${iso(new Date(Date.now()+120*864e5))}&symbol=${t}`, key);
+  const ev = (j.earningsCalendar||[]).filter(x => x.date && x.symbol===t).sort((a,b) => a.date < b.date ? -1 : 1);
+  const e = ev[0] ? {date:ev[0].date, hour:ev[0].hour||''} : {none:true};
+  LS.set('earn_'+t, {at:Date.now(), e}); return e;
+}
+async function loadPlanTicker(t){
+  const key = LS.get('key',''), tdKey = LS.get('tdkey','');
+  const r = results.find(x => x.t===t && x.m);
+  const c = {t, price:r?.price ?? null, earn:r?.earn ?? null, bars:null, tech:null, notes:[]};
+  if (key){ try{ const q = await fh(`quote?symbol=${t}`, key); if (q && q.c) c.price = q.c; else c.notes.push('No live quote for this ticker.'); }catch(e){ c.notes.push('Quote: '+e.message); } }
+  const cached = LS.get('td_'+t, null);
+  c.bars = techCache[t] || (cached && Date.now()-cached.at < 6*3600e3 ? cached.b : null);
+  if (!c.bars && tdKey){
+    try{ const m = await tdBatch([t], tdKey); const e = m[t];
+      if (e && Array.isArray(e.values)){ c.bars = parseTd(e.values); techCache[t] = c.bars; LS.set('td_'+t, {at:Date.now(), b:c.bars}); }
+      else c.notes.push('Price history: ' + ((e && e.message) || 'none'));
+    }catch(e){ c.notes.push('Price history: '+e.message); }
+  } else if (!c.bars) c.notes.push('Add a Twelve Data key in Settings for trend-based entries and stops.');
+  if (!c.bars && cached) c.bars = cached.b;
+  if (c.bars){ c.tech = techFrom(c.bars); if (c.price == null) c.price = c.bars.c[c.bars.c.length-1]; }
+  if (!c.earn && key){ try{ c.earn = await fetchEarn(t, key); }catch(e){} }
+  return c;
+}
+function suggestEntry(c){
+  const t = c.tech, p = c.price;
+  if (t?.brk && t.brk.holding){
+    const lo = t.brk.pivot, hi = lo*1.05;
+    return p <= hi
+      ? {e:p, lo, hi, cls:'g', head:'Breakout: in buy zone', why:`Broke out above $${f2(lo)}${t.brk.volx!=null?` on ${t.brk.volx.toFixed(1)}× volume`:''}. Price is within 5% of the pivot, the usual buy zone.`}
+      : {e:lo, lo, hi, cls:'w', head:'Breakout: extended', why:`Broke out above $${f2(lo)}, but price is ${pct((p/lo-1)*100)} past it, beyond the 5% buy zone. Chasing raises risk; the suggested entry is a pullback toward the pivot.`};
+  }
+  if (t?.base?.tight){
+    const e = t.base.hi*1.001;
+    return {e, lo:e, hi:e*1.05, cls:'w', head:'Base: wait for breakout', why:`Moving sideways in a ${t.base.depth.toFixed(0)}% range. Suggested entry is just above the pivot ($${f2(t.base.hi)}), e.g. a buy-stop order. Only take it if volume is at least 1.5× average that day.`};
+  }
+  if (t && t.trendPts >= 3 && t.s50){
+    const near = p <= t.s50*1.05;
+    return {e: near ? p : t.s50*1.02, lo:t.s50, hi:t.s50*1.05, cls: near ? 'g' : 'w', head: near ? 'Uptrend: near 50-day' : 'Uptrend: wait for pullback',
+      why: near ? `In an uptrend and within 5% of the 50-day average ($${f2(t.s50)}), a lower-risk spot to buy.` : `In an uptrend but ${pct(t.ext)} above the 50-day. Suggested entry is a pullback to about 2% above the 50-day ($${f2(t.s50)}).`};
+  }
+  if (t) return {e:p, cls:'b', head:'No buy setup', why:`Trend is weak (${t.trendPts}/4 trend checks). The numbers below still work, but the chart does not support a new entry yet.`};
+  return {e:p, cls:'n', head:'No price history', why:'Without daily history the setup cannot be read, so entry is set to the current price.'};
+}
+function pickStop(c, E){
+  const k = {pct: E*(1-pcfg.stopPct/100)};
+  if (c.tech?.s50) k.ma50 = c.tech.s50*0.99;
+  if (c.bars) k.low10 = Math.min(...c.bars.l.slice(-10))*0.995;
+  const ns = {};
+  if (c.tech?.sr) for (const z of c.tech.sr.zones){ if (z.lo*0.99 < E*0.98 && (!ns.sup || z.hi > ns.sup.hi)) ns.sup = z; }
+  if (ns.sup) k.sup = ns.sup.lo*0.99;
+  const supTxt = ns.sup ? `support zone $${f2(ns.sup.lo)}–$${f2(ns.sup.hi)}, ${ns.sup.touches} touch${ns.sup.touches>1?'es':''}` : '';
+  let s = null, why = '';
+  switch (pcfg.stopMode){
+    case 'pct': s = k.pct; why = `${pcfg.stopPct}% below entry`; break;
+    case 'sup': s = k.sup ?? null; why = `1% under the ${supTxt || 'support zone'}` + (k.sup != null && k.sup < k.pct ? '' : ''); break;
+    case 'ma50': s = k.ma50 ?? null; why = '1% under the 50-day average'; break;
+    case 'low10': s = k.low10 ?? null; why = 'just under the lowest low of the last 10 days'; break;
+    case 'custom': s = +$('#pCustom').value || null; why = 'your custom level'; break;
+    default:
+      if (k.sup && k.sup < E*0.98 && k.sup >= k.pct){ s = k.sup; why = `1% under the ${supTxt}`; }
+      else if (k.low10 && k.low10 < E*0.98 && k.low10 > k.pct){ s = k.low10; why = `under the 10-day low (tighter than the ${pcfg.stopPct}% max)`; }
+      else { s = k.pct; why = `${pcfg.stopPct}% below entry` + (k.low10 ? (k.low10 >= E*0.98 ? ' (10-day low is too close to entry)' : ' (10-day low is further than the max)') : ''); }
+  }
+  if (s == null) return {err: pcfg.stopMode==='sup' ? 'No support zone found below this entry. Pick another stop method.' : 'This stop method needs price history or a custom price.'};
+  if (s >= E) return {err:`That stop ($${f2(s)}) is at or above the entry price. Pick another stop method or a lower entry.`};
+  if ((1-s/E)*100 > pcfg.stopPct + 0.01 && pcfg.stopMode !== 'custom') why += ` · wider than your ${pcfg.stopPct}% max`;
+  return {s, why};
+}
+function mktPlanLine(sh, rps){
+  const m = marketState(); if (!m) return '';
+  if (m.st === 'up') return `<p class="muted" style="margin:10px 0 0">Market is in an uptrend: full size is fine.</p>`;
+  const half = Math.max(1, Math.floor(sh/2));
+  if (m.st === 'caution') return `<p style="margin:10px 0 0;color:var(--warn)"><b>Market caution.</b> Consider half size: ${half} share${half>1?'s':''}, risking ≈ ${usd0(half*rps)}.</p>`;
+  return `<p class="dn" style="margin:10px 0 0"><b>Market downtrend.</b> Most breakouts fail now. Many traders skip new buys; if you go ahead, consider ${half} share${half>1?'s':''} or fewer.</p>`;
+}
+function renderPlan(){
+  if (!cur) return;
+  readCfg();
+  const sug = cur.sug, E = +$('#pEntry').value;
+  const ep = r => r==null ? '' : r;
+  const t = cur.tech, e = cur.earn;
+  $('#pSetup').innerHTML = `<div class="row" style="justify-content:space-between"><h2 style="margin:0">${cur.t} · ${usd(cur.price)}</h2><span class="pill ${sug.cls}">${sug.head}</span></div>
+    <p style="margin:8px 0 0">${sug.why}</p>
+    ${sug.lo ? `<p class="muted" style="margin:6px 0 0">Buy zone: ${usd(sug.lo)} – ${usd(sug.hi)}</p>` : ''}
+    ${t?.sr ? `<p class="muted" style="margin:6px 0 0">${srText(nearSR(t.sr, cur.price))}</p>` : ''}
+    ${t ? `<p class="muted" style="margin:6px 0 0">50-day ${usd(t.s50)} · 200-day ${t.s200?usd(t.s200):'n/a'} · ${pct(t.ext)} vs 50-day · bars to ${t.asOf}</p>` : ''}
+    ${cur.notes.length ? `<p class="muted" style="margin:6px 0 0">${cur.notes.join(' ')}</p>` : ''}`;
+  if (!(E > 0)){ $('#pOut').innerHTML = '<p class="muted">Enter an entry price.</p>'; curPlan = null; return; }
+  const st = pickStop(cur, E);
+  if (st.err){ $('#pOut').innerHTML = `<p class="dn">${st.err}</p>`; curPlan = null; return; }
+  const S = st.s, rps = E - S, riskBudget = pcfg.acct*pcfg.risk/100;
+  let sh = Math.floor(riskBudget/rps); const maxSh = Math.floor(pcfg.acct*pcfg.maxPos/100/E); let capped = false;
+  if (sh > maxSh){ sh = maxSh; capped = true; }
+  if (sh < 1){ $('#pOut').innerHTML = `<p class="dn">Your risk budget (${usd0(riskBudget)}) is smaller than the risk on one share (${usd(rps)}), or one share exceeds the max position. Raise the account size or risk %, or use a tighter stop.</p>`; curPlan = null; return; }
+  const pos = sh*E, atRisk = sh*rps;
+  const T1 = E*(1+pcfg.t1/100), T2 = E*2;
+  const s1 = sh >= 3 ? Math.round(sh/3) : (sh === 2 ? 1 : 0), s2 = Math.floor((sh-s1)/2), rest = sh - s1 - s2;
+  const Rm = v => ((v-E)/rps).toFixed(1);
+  const tEnd = new Date(Date.now() + pcfg.timeWk*7*864e5), tEndS = tEnd.toISOString().slice(0,10);
+  let earnLine = '';
+  if (e && !e.none){
+    const d = daysTo(e.date);
+    if (d >= 0) earnLine = d <= 7 ? `<p class="dn" style="margin:10px 0 0"><b>Earnings in ${d} day${d===1?'':'s'} (${e.date}).</b> The price can gap past your stop overnight. Many traders wait until after the report, or buy a smaller position.</p>`
+      : `<p class="muted" style="margin:10px 0 0">Next earnings ${e.date} (in ${d} days)${Date.parse(e.date) < tEnd ? ', before your time stop. Decide beforehand whether to hold through it.' : '.'}</p>`;
+  }
+  const nE = t?.sr ? nearSR(t.sr, E) : {};
+  const resWarn = nE.res && nE.res.lo < T1
+    ? `<br><span style="color:var(--warn)">Resistance $${f2(nE.res.lo)}–$${f2(nE.res.hi)} (+${((nE.res.lo/E-1)*100).toFixed(1)}%, ${nE.res.touches} touch${nE.res.touches>1?'es':''}) is below this target. Sellers often show up there; consider taking the first ⅓ near it.</span>`
+    : (t?.sr && !nE.res ? `<br><span class="up">No resistance zone overhead.</span>` : '');
+  const trailNow = t?.s50 ? ` (50-day is ${usd(t.s50)} now)` : '';
+  $('#pOut').innerHTML = `<h2>Plan for ${cur.t}</h2>
+    <table class="ptab">
+      <tr><td>Entry</td><td class="v">${usd(E)}</td><td>${cur.price ? `${pct((E/cur.price-1)*100)} vs current` : ''}</td></tr>
+      <tr><td>Stop-loss</td><td class="v dn">${usd(S)}</td><td>−${((1-S/E)*100).toFixed(1)}% · ${st.why}</td></tr>
+      <tr><td>Shares</td><td class="v">${sh}</td><td>${usd(rps)} risk per share${capped ? ` · capped by ${pcfg.maxPos}% max position` : ''}</td></tr>
+      <tr><td>Position</td><td class="v">${usd0(pos)}</td><td>${(pos/pcfg.acct*100).toFixed(1)}% of account</td></tr>
+      <tr><td>Max loss</td><td class="v dn">${usd0(atRisk)}</td><td>${(atRisk/pcfg.acct*100).toFixed(2)}% of account if the stop is hit</td></tr>
+    </table>
+    <h3>Exit plan</h3>
+    <table class="ptab">
+      <tr><td>Stop hit</td><td class="v dn">${usd(S)}</td><td>Sell all ${sh} shares. Loss ≈ ${usd0(atRisk)}.</td></tr>
+      <tr><td>Target 1<br>+${pcfg.t1}%</td><td class="v up">${usd(T1)}</td><td>${s1 ? `Sell ${s1} share${s1>1?'s':''} (≈⅓), locking in ≈ ${usd0(s1*(T1-E))}.` : 'Too few shares to split; consider selling all or holding.'} Then raise the stop to ${usd(E)} (breakeven). Reward/risk ${Rm(T1)} : 1.${resWarn}</td></tr>
+      <tr><td>Double<br>+100%</td><td class="v up">${usd(T2)}</td><td>${s2 ? `Sell ${s2} more (half of what is left), locking in ≈ ${usd0(s2*(T2-E))}.` : 'Sell half of what is left.'} ${Rm(T2)} : 1.</td></tr>
+      <tr><td>Trailing</td><td class="v">–</td><td>For the last ${rest} share${rest===1?'':'s'}: sell if it closes below the 50-day average${trailNow}, or falls ${pcfg.trail}% from its highest close since entry.</td></tr>
+      <tr><td>Time stop</td><td class="v">${tEndS}</td><td>If it is not at least 5% up (${usd(E*1.05)}) by then, sell and move on.</td></tr>
+    </table>${mktPlanLine(sh, rps)}${earnLine}`;
+  curPlan = {id: Date.now(), t:cur.t, date:new Date().toISOString().slice(0,10), entry:E, stop:S, shares:sh, s1, s2, rest, t1:T1, t2:T2, trail:pcfg.trail, timeEnd:tEndS, stage:0, high:E, last:null, lastAt:null};
+}
+async function openPlan(t){
+  t = (t||'').trim().toUpperCase();
+  if (!t){ toast('Type or pick a ticker'); return; }
+  switchTab('t-plan'); $('#pT').value = t;
+  $('#pMsg').textContent = `Loading ${t}…`; $('#pLoad').disabled = true;
+  try{
+    cur = await loadPlanTicker(t);
+    if (!barsFor('SPY') && LS.get('tdkey','')){ try{ await getBars('SPY'); }catch(e){} }
+    renderMarket();
+    if (cur.price == null){ $('#pMsg').textContent = `No price found for ${t}. Check the ticker and your Finnhub key.`; $('#pBody').style.display = 'none'; return; }
+    cur.sug = suggestEntry(cur);
+    $('#pEntry').value = (+cur.sug.e).toFixed(2);
+    $('#pMsg').textContent = `${t} loaded ${new Date().toLocaleTimeString()}.`;
+    $('#pBody').style.display = 'block'; fillCfg(); renderPlan();
+  } finally { $('#pLoad').disabled = false; }
+}
+function planStatus(p){
+  const P = p.last;
+  if (P == null) return ['Tap Check prices','n'];
+  const stopNow = p.stage >= 1 ? Math.max(p.stop, p.entry) : p.stop;
+  if (P <= stopNow) return [p.stage >= 1 ? `Back to breakeven: sell remaining shares` : `Stop hit: sell all ${p.shares} shares`, 'b'];
+  if (p.stage < 2 && P >= p.t2) return [`Doubled: sell ${p.s2 || 'half of the rest'}`, 'g'];
+  if (p.stage < 1 && P >= p.t1) return [`Target 1 hit: sell ${p.s1}, raise stop to ${usd(p.entry)}`, 'g'];
+  if (p.stage >= 1 && P <= p.high*(1-p.trail/100)) return [`Down ${p.trail}% from high: trailing exit`, 'b'];
+  const b = techCache[p.t] || LS.get('td_'+p.t, null)?.b;
+  if (p.stage >= 1 && b){ const s50 = smaN(b.c, 50); if (s50 && P < s50) return ['Below 50-day: trailing exit', 'w']; }
+  if (Date.now() > Date.parse(p.timeEnd) && P < p.entry*1.05) return ['Time stop: not working, consider selling', 'w'];
+  return [`Holding · ${pct((P/p.entry-1)*100)}`, 'n'];
+}
+function renderSaved(){
+  const plans = LS.get('plans', []);
+  if (!plans.length){ $('#pSaved').innerHTML = '<p class="muted">No saved plans yet.</p>'; return; }
+  $('#pSaved').innerHTML = plans.map(p => {
+    const [txt, cls] = planStatus(p);
+    const ec = LS.get('earn_'+p.t, null)?.e; const ed = ec && !ec.none ? daysTo(ec.date) : null;
+    const stageTxt = ['Full position', 'Target 1 sold', 'Doubled, half sold'][p.stage];
+    return `<div class="sp">
+      <div class="row" style="justify-content:space-between"><b>${p.t}</b><span class="pill ${cls}">${txt}</span></div>
+      <div class="muted" style="margin-top:6px">${p.date} · ${p.shares} sh @ ${usd(p.entry)} · stop ${usd(p.stage>=1?Math.max(p.stop,p.entry):p.stop)} · T1 ${usd(p.t1)} · 2× ${usd(p.t2)}</div>
+      <div class="muted">${stageTxt}${p.last!=null ? ` · last ${usd(p.last)} · high ${usd(p.high)} · ${new Date(p.lastAt).toLocaleString()}` : ''}${ed!=null && ed>=0 ? ` · <span class="${ed<=7?'dn':''}">earnings in ${ed}d</span>` : ''}</div>
+      <div class="row" style="margin-top:8px">
+        ${p.stage<1 ? `<button class="btn ghost" data-pst="${p.id}:1" data-tip="Record that you sold about a third at Target 1. The stop moves up to your entry price.">T1 sold</button>` : ''}
+        ${p.stage<2 ? `<button class="btn ghost" data-pst="${p.id}:2" data-tip="Record that you sold half of the rest at 2×. The remaining shares follow the trailing stop.">2× sold</button>` : ''}
+        ${chartBtn(p.t)}
+        <button class="btn ghost" data-pdel="${p.id}" data-tip="Remove this saved plan.">Delete</button>
+      </div></div>`;
+  }).join('');
+}
+$('#pLoad').onclick = () => openPlan($('#pT').value);
+$('#pT').addEventListener('keydown', e => { if (e.key === 'Enter') openPlan($('#pT').value); });
+$('#pT').addEventListener('focus', planList);
+['#pEntry','#pAcct','#pRisk','#pStopMode','#pStopPct','#pCustom','#pMaxPos','#pT1','#pTrail','#pTime'].forEach(id => $(id).addEventListener('input', renderPlan));
+$('#pStopMode').addEventListener('change', () => { if ($('#pStopMode').value === 'custom') $('#pCustom').focus(); renderPlan(); });
+$('#pUseSug').onclick = () => { if (cur){ $('#pEntry').value = (+cur.sug.e).toFixed(2); renderPlan(); } };
+$('#pUseCur').onclick = () => { if (cur){ $('#pEntry').value = (+cur.price).toFixed(2); renderPlan(); } };
+$('#pSave').onclick = () => {
+  if (!curPlan){ toast('Fix the plan inputs first'); return; }
+  const plans = LS.get('plans', []); plans.unshift(curPlan); LS.set('plans', plans); renderSaved(); toast(`${curPlan.t} plan saved`);
+};
+$('#pCheck').onclick = async () => {
+  const key = LS.get('key',''); if (!key){ toast('Add your Finnhub key in Settings'); return; }
+  const plans = LS.get('plans', []); if (!plans.length) return;
+  $('#pCheck').disabled = true;
+  for (const p of plans){
+    try{ const q = await fh(`quote?symbol=${p.t}`, key); if (q && q.c){ p.last = q.c; p.lastAt = Date.now(); p.high = Math.max(p.high, q.c, q.h || 0); } }catch(e){}
+    await sleep(1050);
+  }
+  LS.set('plans', plans); renderSaved(); $('#pCheck').disabled = false; toast('Plans updated');
+};
+document.addEventListener('click', e => {
+  const pl = e.target.closest('[data-plan]'); if (pl){ openPlan(pl.dataset.plan); return; }
+  const st = e.target.closest('[data-pst]');
+  if (st){ const [id, stg] = st.dataset.pst.split(':'); const plans = LS.get('plans', []); const p = plans.find(x => String(x.id) === id); if (p){ p.stage = +stg; LS.set('plans', plans); renderSaved(); } return; }
+  const del = e.target.closest('[data-pdel]');
+  if (del){ LS.set('plans', LS.get('plans', []).filter(x => String(x.id) !== del.dataset.pdel)); renderSaved(); }
+});
+fillCfg(); renderSaved();
+
+/* ---------- tooltips: long-press on touch, hover with a mouse ---------- */
+(() => {
+  const tip = $('#tip'); let timer = null, shownFor = null, hideT = null, sx = 0, sy = 0, suppressClick = false;
+  function show(el){
+    tip.textContent = el.dataset.tip; tip.classList.add('on'); shownFor = el;
+    const r = el.getBoundingClientRect(), tw = tip.offsetWidth, th = tip.offsetHeight;
+    let x = Math.min(Math.max(12, r.left + r.width/2 - tw/2), innerWidth - tw - 12);
+    let y = r.top - th - 8; if (y < 8) y = r.bottom + 8;
+    tip.style.left = x + 'px'; tip.style.top = y + 'px';
+    clearTimeout(hideT); hideT = setTimeout(hide, 5000);
+    if (navigator.vibrate) try{ navigator.vibrate(10); }catch(e){}
+  }
+  function hide(){ tip.classList.remove('on'); shownFor = null; }
+  document.addEventListener('pointerdown', e => {
+    if (shownFor && e.pointerType !== 'mouse'){ hide(); }
+    const el = e.target.closest('[data-tip]'); if (!el || e.pointerType === 'mouse') return;
+    sx = e.clientX; sy = e.clientY;
+    clearTimeout(timer); timer = setTimeout(() => { show(el); suppressClick = true; }, 450);
+  }, true);
+  document.addEventListener('pointermove', e => { if (timer && (Math.abs(e.clientX-sx) > 10 || Math.abs(e.clientY-sy) > 10)) { clearTimeout(timer); timer = null; } }, true);
+  ['pointerup','pointercancel'].forEach(t => document.addEventListener(t, () => { clearTimeout(timer); timer = null; }, true));
+  document.addEventListener('click', e => { if (suppressClick){ suppressClick = false; e.preventDefault(); e.stopPropagation(); } }, true);
+  document.addEventListener('contextmenu', e => { if (e.target.closest('[data-tip]')) e.preventDefault(); });
+  let hoverT = null;
+  document.addEventListener('pointerover', e => {
+    if (e.pointerType !== 'mouse') return;
+    const el = e.target.closest('[data-tip]'); clearTimeout(hoverT);
+    if (el) hoverT = setTimeout(() => show(el), 500); else hide();
+  });
+  document.addEventListener('pointerout', e => { if (e.pointerType === 'mouse' && !e.relatedTarget?.closest?.('[data-tip]')){ clearTimeout(hoverT); hide(); } });
+  addEventListener('scroll', hide, {passive:true});
+})();
+
 /* ---------- init ---------- */
-loadSettings(); renderEtf(); decay(); rescore(false);
+loadSettings(); renderEtf(); decay(); rescore(false); renderMarket();
 const at = LS.get('scanAt', 0);
 if (at && results.length) $('#status').textContent = `Last scan ${new Date(at).toLocaleString()} · tap Scan to refresh`;
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
