@@ -1,4 +1,4 @@
-const CACHE = 'doubler-v7';
+const CACHE = 'doubler-v10';
 const SHELL = ['./', 'index.html', 'manifest.json', 'icon-192.png', 'icon-512.png', 'https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js',
   'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'];
 self.addEventListener('install', e => {

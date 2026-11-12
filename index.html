@@ -111,14 +111,27 @@ td .tk{background:none;border:0;color:var(--ink);font:inherit;font-weight:700;pa
 .mkt .hd b{font-size:14.5px}
 .mkt .ix{color:var(--mute);margin-top:5px;line-height:1.5}
 .mkt .adv{margin-top:5px}
+header{display:flex;align-items:flex-start;gap:10px}
+header .hwrap{flex:1;min-width:0}
+#aboutBtn{flex:none;width:34px;height:34px;border-radius:50%;background:var(--panel2);border:1px solid var(--line);color:var(--mute);font:600 15px/1 Georgia,serif;margin-top:2px}
+.chk{display:flex;align-items:center;gap:8px;margin:10px 0 0;font-size:13.5px}
+.chk input{width:auto;margin:0}
+.sup{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.sup a{flex:1;min-width:130px;text-align:center;text-decoration:none;border-radius:10px;padding:11px 12px;font-weight:600;background:var(--acc);color:#06210f}
+.sup a.alt{background:var(--panel2);color:var(--ink);border:1px solid var(--line);font-weight:500}
+.about p{margin:8px 0}
+.about ul{margin:6px 0;padding-left:18px;color:var(--mute);font-size:13px}
 .toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--line);padding:9px 14px;border-radius:20px;font-size:13px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:20}
 .toast.on{opacity:1}
 </style>
 </head>
 <body>
 <header>
-  <h1 id="hdr">Doubling Screener</h1>
-  <p id="sub">Rank stocks by potential to double in 3–12 months</p>
+  <div class="hwrap">
+    <h1 id="hdr">Doubling Screener</h1>
+    <p id="sub">Rank stocks by potential to double in 3–12 months</p>
+  </div>
+  <button id="aboutBtn" aria-label="About" data-tip="About Doubler, data sources, backup and how to support the project.">i</button>
 </header>
 
 <main>
@@ -190,7 +203,7 @@ td .tk{background:none;border:0;color:var(--ink);font:inherit;font-weight:700;pa
     <textarea id="wl"></textarea>
     <div class="row" style="margin-top:10px">
       <button class="btn" id="saveBtn" data-tip="Save keys, watchlist and weights on this phone, and re-score current results.">Save</button>
-      <button class="btn ghost" id="resetWl" data-tip="Replace your watchlist with the built-in list of about 40 growth stocks.">Reset to default</button>
+      <button class="btn ghost" id="resetWl" data-tip="Replace your watchlist with the built-in list of about 140 stocks across sectors.">Reset to default</button>
     </div>
   </div>
   <div class="card">
@@ -201,6 +214,31 @@ td .tk{background:none;border:0;color:var(--ink);font:inherit;font-weight:700;pa
   <div class="card">
     <h2>Install on Android</h2>
     <p class="muted" style="margin:0">Open this page in Chrome, tap ⋮ then <b>Add to Home screen</b> (or <b>Install app</b>). The ETF tab works offline; scanning needs internet.</p>
+  </div>
+  <div class="card">
+    <h2>Backup &amp; restore</h2>
+    <p class="muted" style="margin:0">Save your keys, watchlist, score weights, plan settings and saved trade plans to a file. Use it when changing phones or after clearing browser data.</p>
+    <label class="chk"><input type="checkbox" id="bkKeys" checked> Include API keys</label>
+    <label class="chk"><input type="checkbox" id="bkRes"> Include last scan results (larger file)</label>
+    <div class="row" style="margin-top:10px">
+      <button class="btn" id="bkExport" data-tip="Download a backup file (.json) to your phone's Downloads folder, or share it to Drive, email or chat.">Export backup</button>
+      <button class="btn ghost" id="bkImport" data-tip="Load a backup file. It replaces the current settings and plans on this phone.">Import backup</button>
+      <input type="file" id="bkFile" accept=".json,application/json" style="display:none">
+    </div>
+    <p class="muted" id="bkMsg" style="margin:8px 0 0">The file contains your API keys in plain text if included, so keep it private.</p>
+  </div>
+  <div class="card about" id="aboutCard">
+    <h2>About Doubler</h2>
+    <p>A pocket screener for US growth stocks: scores your watchlist for doubling potential, checks entry setups, draws support and resistance, reads the market direction and builds trade plans.</p>
+    <ul>
+      <li>Prices, financials, earnings dates: <b>Finnhub</b> (your free key)</li>
+      <li>Daily price history: <b>Twelve Data</b> (your free key)</li>
+      <li>Live charts: <b>TradingView</b> widget · Zone charts: TradingView Lightweight Charts</li>
+      <li>Your keys and data stay on this phone. Nothing is sent to the app's author.</li>
+    </ul>
+    <p class="muted" style="font-size:12.5px">For education and analysis only. Not financial advice or a recommendation to buy or sell. Data can be delayed or wrong; check with your broker before trading.</p>
+    <div id="supportBox"></div>
+    <p class="muted" style="font-size:12px;margin-top:10px" id="verLine"></p>
   </div>
 </section>
 <!-- TRADE PLAN -->
@@ -281,6 +319,19 @@ td .tk{background:none;border:0;color:var(--ink);font:inherit;font-weight:700;pa
 </div>
 
 <script>
+/* ---------- app info & support links: EDIT THESE ---------- */
+const APP_VER = '1.10 · Nov 2026';
+const SUPPORT = {
+  note: 'Doubler is free. If it helps you, a small tip keeps it going.',
+  links: [
+    // Fill in your own links after signing up. Empty url = button hidden.
+    {label: 'Buy me a coffee on Ko-fi', url: ''},          // e.g. 'https://ko-fi.com/yourname'
+    {label: 'Sponsor on GitHub',        url: ''},          // e.g. 'https://github.com/sponsors/yourname'
+    {label: 'PayPal',                   url: ''},          // e.g. 'https://paypal.me/yourname'
+  ],
+  contact: ''                                              // e.g. 'mailto:you@example.com' or a Telegram link
+};
+
 /* ---------- storage helpers ---------- */
 const LS = {
   get(k, d){ try{ const v = localStorage.getItem('dbl_'+k); return v===null ? d : JSON.parse(v); }catch(e){ return d; } },
@@ -358,6 +409,16 @@ const DEFAULT_WL = `PLTR SOFI HOOD RKLB IONQ HIMS APP AFRM UPST CELH
 ASTS OKLO SMCI CRWD NET DDOG SNOW SHOP MELI NU
 TMDX AXON DUOL CAVA ELF ONON RDDT ALAB VRT ANET
 CRDO NVDA AMD MU TSLA COIN MSTR SOUN BBAI ACHR
+NBIS CRWV IREN AVGO MRVL ARM TSM SNDK LITE COHR
+CLS AMAT ASML LRCX INTC APLD GOOGL META AMZN MSFT
+ORCL PANW PATH UBER NFLX LLY NVO ABBV JNJ MRK
+ISRG BSX LMT RTX NOC GD LHX KTOS XOM CVX
+OXY SLB EOG LNG CEG VST GEV FCX NEM B
+AA NUE CDE CAT DE ETN HON PH CMI COST
+WMT PG KO PEP CL PLD EQIX DLR O AMT
+CCI JPM GS MS BAC C BRK.B PGR ABNB BKNG
+DAL UAL MAR CCL LUNR JOBY RIVN QBTS POET CRCL
+OPEN AAPL QCOM WDC TTWO FSLR SE SBUX CVS STRL
 TQQQ SOXL`;
 const DEFAULT_W = {grow:30, mom:20, rs:20, vol:15, cap:10, pos:5};
 const W_LABEL = {grow:'Growth', mom:'Momentum', rs:'Rel. strength', vol:'Range / beta', cap:'Small size', pos:'Near 52w high'};
@@ -1165,6 +1226,47 @@ document.addEventListener('click', e => {
   if (del){ LS.set('plans', LS.get('plans', []).filter(x => String(x.id) !== del.dataset.pdel)); renderSaved(); }
 });
 fillCfg(); renderSaved();
+
+/* ---------- about, support, backup ---------- */
+function renderAbout(){
+  const links = SUPPORT.links.filter(l => l.url);
+  $('#supportBox').innerHTML = links.length || SUPPORT.contact
+    ? `<h2 style="margin-top:14px">Support the project</h2><p class="muted" style="margin:0">${SUPPORT.note}</p>
+       <div class="sup">${links.map((l,i) => `<a href="${l.url}" target="_blank" rel="noopener" class="${i?'alt':''}">${l.label}</a>`).join('')}
+       ${SUPPORT.contact ? `<a href="${SUPPORT.contact}" target="_blank" rel="noopener" class="alt">Contact / feedback</a>` : ''}</div>`
+    : '';
+  $('#verLine').textContent = `Version ${APP_VER}`;
+}
+$('#aboutBtn').onclick = () => { switchTab('t-set'); setTimeout(() => $('#aboutCard').scrollIntoView({behavior:'smooth', block:'start'}), 50); };
+const BK_KEYS = ['wl','w','pcfg','plans','scanAt'];
+$('#bkExport').onclick = async () => {
+  const data = {};
+  const keys = [...BK_KEYS, ...($('#bkKeys').checked ? ['key','tdkey'] : []), ...($('#bkRes').checked ? ['results'] : [])];
+  keys.forEach(k => { const v = LS.get(k, undefined); if (v !== undefined) data[k] = v; });
+  const blob = new Blob([JSON.stringify({app:'Doubler', version:APP_VER, exported:new Date().toISOString(), data}, null, 1)], {type:'application/json'});
+  const name = `doubler-backup-${new Date().toISOString().slice(0,10)}.json`;
+  const file = new File([blob], name, {type:'application/json'});
+  try{
+    if (navigator.canShare && navigator.canShare({files:[file]})){ await navigator.share({files:[file], title:'Doubler backup'}); $('#bkMsg').textContent = 'Backup shared.'; return; }
+  }catch(e){ if (e.name === 'AbortError') return; }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  $('#bkMsg').textContent = `Saved ${name} to Downloads.`;
+};
+$('#bkImport').onclick = () => $('#bkFile').click();
+$('#bkFile').onchange = async e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  try{
+    const j = JSON.parse(await f.text());
+    if (j.app !== 'Doubler' || !j.data) throw new Error('Not a Doubler backup file');
+    const ks = Object.keys(j.data);
+    const plans = (j.data.plans || []).length;
+    if (!confirm(`Restore backup from ${(j.exported||'').slice(0,10)}?\n\nIt contains: ${ks.join(', ')}${plans?` (${plans} saved plan${plans>1?'s':''})`:''}.\nThis replaces those settings on this phone.`)) return;
+    ks.forEach(k => LS.set(k, j.data[k]));
+    toast('Backup restored'); setTimeout(() => location.reload(), 700);
+  }catch(err){ $('#bkMsg').textContent = 'Import failed: ' + err.message; }
+};
+renderAbout();
 
 /* ---------- tooltips: long-press on touch, hover with a mouse ---------- */
 (() => {
