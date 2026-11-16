@@ -121,6 +121,13 @@ header .hwrap{flex:1;min-width:0}
 .sup a.alt{background:var(--panel2);color:var(--ink);border:1px solid var(--line);font-weight:500}
 .about p{margin:8px 0}
 .about ul{margin:6px 0;padding-left:18px;color:var(--mute);font-size:13px}
+.tag.ready{background:var(--acc);color:#06210f;border-color:var(--acc);font-weight:700}
+.tag.ready.half{background:var(--warn);border-color:var(--warn);color:#2a1d00}
+.res.isready{background:rgba(60,207,145,.06)}
+.chip.rdy{border-color:#1f5a40;color:var(--acc);font-weight:600}
+.chip.rdy.on{background:var(--acc);color:#06210f}
+.rlist{display:grid;gap:3px;margin:4px 0 2px}
+.empty{padding:16px 14px;margin:0;color:var(--mute);font-size:13.5px;line-height:1.5}
 .toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--line);padding:9px 14px;border-radius:20px;font-size:13px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:20}
 .toast.on{opacity:1}
 </style>
@@ -149,6 +156,7 @@ header .hwrap{flex:1;min-width:0}
     <p class="muted" id="status">Add your free Finnhub key in Settings, then tap Scan.</p>
   </div>
   <div class="chips" id="sortChips">
+    <button class="chip rdy" id="readyChip" data-tip="Show only stocks READY to trade today: uptrend 4/4, broke out on at least 1.5× volume in the last 3 days, still within 5% of the breakout level, 0–10% above the 50-day, no earnings within 7 days, and the market not in a downtrend. Same rules as the backtest.">Ready only</button>
     <button class="chip on" data-k="score" data-tip="Sort by the 0–100 doubling score: growth, momentum, trading range, small size and nearness to the 52-week high, weighted as set in Settings.">Score</button>
     <button class="chip" data-k="mom" data-tip="Sort by 6-month price return, strongest first.">Momentum</button>
     <button class="chip" data-k="grow" data-tip="Sort by revenue growth over the last 12 months versus the year before, fastest first.">Growth</button>
@@ -325,9 +333,9 @@ const SUPPORT = {
   note: 'Doubler is free. If it helps you, a small tip keeps it going.',
   links: [
     // Fill in your own links after signing up. Empty url = button hidden.
-    {label: 'Buy me a coffee on Ko-fi', url: 'https://ko-fi.com/weeattea'},          // e.g. 'https://ko-fi.com/yourname'
-    {label: 'Sponsor on GitHub',        url: 'https://github.com/sponsors/MOE-SG'},          // e.g. 'https://github.com/sponsors/yourname'
-    {label: 'PayPal',                   url: 'https://www.paypal.me/MOESG1234'},          // e.g. 'https://paypal.me/yourname'
+    {label: 'Buy me a coffee on Ko-fi', url: ''},          // e.g. 'https://ko-fi.com/yourname'
+    {label: 'Sponsor on GitHub',        url: ''},          // e.g. 'https://github.com/sponsors/yourname'
+    {label: 'PayPal',                   url: ''},          // e.g. 'https://paypal.me/yourname'
   ],
   contact: ''                                              // e.g. 'mailto:you@example.com' or a Telegram link
 };
@@ -664,7 +672,8 @@ $('#scanBtn').onclick = async () => {
   await tdP;
   $('#prog').style.width = '100%';
   results = out; LS.set('results', results); LS.set('scanAt', Date.now()); rescore();
-  $('#status').textContent = `${stopFlag?'Stopped':'Done'} · ${out.length} tickers${fails?`, ${fails} without data`:''}${tdState.msg?' · '+tdState.msg:''} · ${new Date().toLocaleString()}`;
+  const nr = results.filter(r => r.rdy?.ready).length;
+  $('#status').textContent = `${stopFlag?'Stopped':'Done'} · ${nr} ready to trade · ${out.length} tickers${fails?`, ${fails} without data`:''}${tdState.msg?' · '+tdState.msg:''} · ${new Date().toLocaleString()}`;
   $('#scanBtn').disabled = false; $('#stopBtn').disabled = true;
 };
 $('#stopBtn').onclick = () => { stopFlag = true; };
@@ -735,6 +744,24 @@ const pct = v => v==null||isNaN(v) ? '–' : (v>=0?'+':'')+(+v).toFixed(1)+'%';
 const capFmt = m => !m ? '–' : m>=1e6 ? '$'+(m/1e6).toFixed(2)+'T' : m>=1e3 ? '$'+(m/1e3).toFixed(1)+'B' : '$'+m.toFixed(0)+'M';
 function scoreColor(s){ return s==null ? 'var(--line)' : s>=70 ? 'var(--acc)' : s>=50 ? 'var(--warn)' : 'var(--bear)'; }
 
+/* ---------- READY: a stock you could buy today, same rules as the backtest ---------- */
+let readyOnly = LS.get('readyOnly', false);
+function readyInfo(r){
+  const t = r.tech; if (!t) return null;
+  const s = sig(r), m = marketState(), px = r.price ?? t.last;
+  const b = t.brk && t.brk.holding && t.brk.volx >= VOL_X ? t.brk : null;
+  const zone = b ? b.pivot*1.05 : null;
+  const checks = [
+    ['Uptrend 4/4 (above rising 50-day and 200-day)', t.trendPts === 4],
+    [b ? `Broke out ${b.daysAgo===0?'today':b.daysAgo+'d ago'} above $${b.pivot.toFixed(2)} on ${b.volx.toFixed(1)}× volume` : 'Breakout on ≥1.5× volume in the last 3 days', !!b],
+    [b ? `Price $${(+px).toFixed(2)} within buy zone (up to $${zone.toFixed(2)})` : 'Price within 5% of the breakout level', b ? px <= zone : false],
+    [`0–10% above the 50-day (now ${t.ext!=null ? (t.ext>=0?'+':'')+t.ext.toFixed(1)+'%' : 'n/a'})`, t.ext!=null && t.ext >= 0 && t.ext <= 10],
+    [r.earn ? (r.earn.none ? 'No earnings in the next 120 days' : `Earnings ${s.earnDays>=0 ? 'in '+s.earnDays+' days' : 'just passed'} (needs more than 7)`) : 'Earnings date unknown', r.earn ? (r.earn.none || s.earnDays > 7 || s.earnDays < 0) : null],
+    [m ? `Market: ${MKT[m.st][0].replace('Market: ','')}` : 'Market direction unknown', m ? m.st !== 'down' : null],
+  ];
+  const ready = checks.every(c => c[1] !== false);
+  return {ready, half: ready && m && m.st === 'caution', checks, passed: checks.filter(c => c[1] === true).length};
+}
 function renderResults(){
   if (!results.length){ $('#results').innerHTML = '<p class="muted" style="padding:14px;margin:0">No results yet.</p>'; return; }
   const key = {
@@ -745,12 +772,23 @@ function renderResults(){
     cap: r => -(r.m?.marketCapitalization ?? 1e12),
     setup: r => (sig(r).n ?? -1) * 1000 + (r.score ?? 0),
   }[sortKey];
-  const ranked = results.filter(r => r.m).sort((a,b) => key(b)-key(a));
-  const lev = results.filter(r => r.lev), bad = results.filter(r => r.err);
+  results.forEach(r => { r.rdy = r.m ? readyInfo(r) : null; });
+  const nReady = results.filter(r => r.rdy?.ready).length;
+  $('#readyChip').textContent = `Ready only (${nReady})`;
+  $('#readyChip').classList.toggle('on', readyOnly);
+  let ranked = results.filter(r => r.m).sort((a,b) => key(b)-key(a));
+  if (readyOnly) ranked = ranked.filter(r => r.rdy?.ready);
+  const lev = readyOnly ? [] : results.filter(r => r.lev), bad = readyOnly ? [] : results.filter(r => r.err);
   let h = '';
+  if (readyOnly && !ranked.length){
+    const near = results.filter(r => r.rdy && !r.rdy.ready && r.rdy.passed >= 4).map(r => r.t);
+    h = `<p class="empty"><b>No stocks are ready to trade today.</b> That is normal: on most days nothing qualifies.${
+      near.length ? `<br>Closest (4–5 of 6 checks): ${near.slice(0,8).join(', ')}. Tap "Ready only" to show all, then tap a stock to see which check is missing.` :
+      '<br>Sort by "Setup ready" to see stocks building a base near a breakout.'}</p>`;
+  }
   ranked.forEach((r,i) => {
     const m = r.m;
-    h += `<div class="res" data-i="${r.t}">
+    h += `<div class="res${r.rdy?.ready ? ' isready' : ''}" data-i="${r.t}">
       <div class="score" style="border-color:${scoreColor(r.score)}" data-tip="Doubling score 0–100. Green 70+, amber 50–69, red under 50. Tap the row to see what it is made of.">${r.score ?? '–'}</div>
       <div class="mid"><div class="t">${i+1}. ${r.t}</div><div class="s">${capFmt(m.marketCapitalization)} · 6M ${pct(m['26WeekPriceReturnDaily'])} · Rev ${pct(m.revenueGrowthTTMYoy)}</div>${tagsHtml(r)}</div>
       <div class="r"><div>$${(+r.price).toFixed(2)}</div><div class="${r.dp>=0?'up':'dn'}" style="font-size:12.5px">${pct(r.dp)}</div></div>
@@ -780,14 +818,21 @@ function tagsHtml(r){
     const txt = `S ${nr.sup ? nr.supPct.toFixed(0)+'%' : '–'} · R ${nr.res ? '+'+nr.resPct.toFixed(0)+'%' : 'none'}`;
     srTag = tg([txt, !nr.res ? 'g' : nr.resPct < 5 ? 'w' : 'n'], 'Distance to the nearest support zone below (S) and resistance zone above (R). Amber: resistance is less than 5% overhead, so sellers may cap the move. R none: no resistance overhead. Open the chart (Zones view) to see them.');
   }
+  const rd = r.rdy || (r.m ? readyInfo(r) : null);
+  const readyTag = rd?.ready ? `<span class="tag ready${rd.half?' half':''}" data-tip="${rd.half ? 'Ready to trade, but the market is in Caution: consider half size.' : 'Ready to trade today: all six entry checks pass. Tap the row for details, then Make trade plan.'}">READY${rd.half?' · half size':''}</span>` : '';
   const head = s.n!=null ? tg([`Setup ${s.n}/4`, s.n===4?'g':s.n===3?'w':'n'], TIP.setup) : '';
-  const h = head + tg(s.trend, TIP.trend) + (r.rs ? tg([`RS ${r.rs.out>=0?'+':''}${r.rs.out.toFixed(0)}%${r.rs.newHigh?' · new high':''}`, r.rs.out>=20 || r.rs.newHigh ? 'g' : r.rs.out>=0 ? 'w' : 'b'], 'Relative strength: weighted 3–12 month return compared with the S&P 500 (recent 3 months count double). +20% or more is a market leader. New high: the stock-vs-S&P line is at a 52-week high, often seen before big moves.') : '') + tg(s.brk, TIP.brk) + tg(s.ext, TIP.ext) + srTag + tg(s.earn, TIP.earn);
+  const h = readyTag + head + tg(s.trend, TIP.trend) + (r.rs ? tg([`RS ${r.rs.out>=0?'+':''}${r.rs.out.toFixed(0)}%${r.rs.newHigh?' · new high':''}`, r.rs.out>=20 || r.rs.newHigh ? 'g' : r.rs.out>=0 ? 'w' : 'b'], 'Relative strength: weighted 3–12 month return compared with the S&P 500 (recent 3 months count double). +20% or more is a market leader. New high: the stock-vs-S&P line is at a 52-week high, often seen before big moves.') : '') + tg(s.brk, TIP.brk) + tg(s.ext, TIP.ext) + srTag + tg(s.earn, TIP.earn);
   return h ? `<div class="tags">${h}</div>` : '';
 }
 function setupHtml(r){
   const t = r.tech, e = r.earn, f = v => v==null ? '–' : (+v).toFixed(2);
   const ok = v => v==null ? '<span class="muted">n/a</span>' : v ? '<span class="up">✓</span>' : '<span class="dn">✗</span>';
   let h = '<div class="setup">';
+  const rd = readyInfo(r);
+  if (rd){
+    h += `<div><b>${rd.ready ? (rd.half ? '<span style="color:var(--warn)">READY · half size (market caution)</span>' : '<span class="up">READY to trade</span>') : `Not ready · ${rd.passed} of 6 checks`}</b></div>
+      <div class="rlist">${rd.checks.map(c => `<div>${c[1]===null ? '<span class="muted">?</span>' : c[1] ? '<span class="up">✓</span>' : '<span class="dn">✗</span>'} ${c[0]}</div>`).join('')}</div>`;
+  }
   if (t){
     h += `<div><b>Trend</b> · above 50-day ($${f(t.s50)}) ${ok(t.a50)}, rising ${ok(t.r50)} <span class="muted">${pct(t.s50chg)} in 10d</span></div>`;
     h += `<div style="padding-left:52px">above 200-day (${t.s200?'$'+f(t.s200):'not enough history'}) ${ok(t.a200)}, rising ${ok(t.r200)} <span class="muted">${pct(t.s200chg)} in 20d</span></div>`;
@@ -950,8 +995,9 @@ $('#results').addEventListener('click', e => {
 });
 $('#sortChips').addEventListener('click', e => {
   const b = e.target.closest('.chip'); if (!b) return;
+  if (b.id === 'readyChip'){ readyOnly = !readyOnly; LS.set('readyOnly', readyOnly); renderResults(); return; }
   sortKey = b.dataset.k;
-  document.querySelectorAll('#sortChips .chip').forEach(c => c.classList.toggle('on', c===b));
+  document.querySelectorAll('#sortChips .chip[data-k]').forEach(c => c.classList.toggle('on', c===b));
   renderResults();
 });
 
@@ -964,6 +1010,7 @@ $('#xlsBtn').onclick = () => {
     'Rev growth TTM %':r.m.revenueGrowthTTMYoy, 'Rev growth Q %':r.m.revenueGrowthQuarterlyYoy, 'EPS growth TTM %':r.m.epsGrowthTTMYoy,
     '52w low':r.m['52WeekLow'], '52w high':r.m['52WeekHigh'], Beta:r.m.beta, 'P/S':r.m.psTTM,
     ...(() => { const s = sig(r), t = r.tech || {}, yn = v => v==null ? '' : v ? 'Y' : 'N'; return {
+      'READY': r.rdy?.ready ? (r.rdy.half ? 'Yes (half size)' : 'Yes') : 'No', 'Ready checks /6': r.rdy?.passed ?? '',
       'Setup /4': s.n, 'Above 50d': yn(t.a50), '50d rising': yn(t.r50), 'Above 200d': yn(t.a200), '200d rising': yn(t.r200),
       '% vs 50d': t.ext!=null ? +t.ext.toFixed(1) : '', 'Base / breakout': s.brk ? s.brk[0] : '',
       'Next earnings': r.earn && !r.earn.none ? r.earn.date : '', 'Days to earnings': s.earnDays ?? '',
