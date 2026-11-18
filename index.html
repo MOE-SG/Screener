@@ -128,6 +128,8 @@ header .hwrap{flex:1;min-width:0}
 .chip.rdy.on{background:var(--acc);color:#06210f}
 .rlist{display:grid;gap:3px;margin:4px 0 2px}
 .empty{padding:16px 14px;margin:0;color:var(--mute);font-size:13.5px;line-height:1.5}
+#nList .score{font-size:13px}
+.nstale{border-left:3px solid var(--warn);padding:8px 10px;background:var(--panel2);border-radius:6px;font-size:13px;margin:0 0 12px}
 .toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--line);padding:9px 14px;border-radius:20px;font-size:13px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:20}
 .toast.on{opacity:1}
 </style>
@@ -194,6 +196,28 @@ header .hwrap{flex:1;min-width:0}
   </div>
 </section>
 
+<!-- NIGHTLY -->
+<section class="tab" id="t-night">
+  <div class="mkt" id="mktNight"></div>
+  <div id="nStale"></div>
+  <div class="card">
+    <div class="row">
+      <div style="flex:1;min-width:0"><b id="nInfo">Nightly scan</b><div class="muted" id="nSub" style="font-size:12.5px"></div></div>
+      <button class="btn ghost" id="nReload" data-tip="Load the latest nightly results. The scan runs on GitHub after every US close, about 6:30am Singapore time, Tuesday to Saturday.">Refresh</button>
+    </div>
+  </div>
+  <div class="chips" id="nChips">
+    <button class="chip on" data-n="ready" data-tip="Stocks that passed all six READY checks after the last US close.">Ready</button>
+    <button class="chip" data-n="near" data-tip="Stocks passing 4 or 5 of the 6 checks: watch these, they may be ready soon.">Close</button>
+    <button class="chip" data-n="setup" data-tip="Stocks with the Setup 4/4 tag, including ones still inside their base near the breakout level.">Setup 4/4</button>
+    <button class="chip" data-n="watch" data-tip="Only stocks from your scan watchlist (scanner/watchlist.txt in the repo).">Watchlist</button>
+    <button class="chip" data-n="all" data-tip="Every stock the nightly scan kept (trend at least 3 of 4, or close to a setup).">All</button>
+  </div>
+  <input id="nQ" placeholder="Search ticker" autocomplete="off" autocapitalize="characters" style="margin-bottom:10px">
+  <div class="card" style="padding:0" id="nList"><p class="empty">Loading…</p></div>
+  <p class="note">Results from the nightly scan of your watchlist and every liquid US stock, using the same READY rules as the Screener. Prices are from the last US close. Confirm on the chart and make a trade plan before buying. Not financial advice.</p>
+</section>
+
 <!-- SETTINGS -->
 <section class="tab" id="t-set">
   <div class="card">
@@ -201,6 +225,9 @@ header .hwrap{flex:1;min-width:0}
     <label for="key">Finnhub API key (free at finnhub.io) · prices, financials, earnings dates</label>
     <input id="key" type="password" placeholder="Paste key" autocomplete="off">
     <p class="muted">Stored only on this phone. Free tier allows about 60 calls a minute, so a scan takes roughly 3 seconds per ticker.</p>
+    <label for="nUrl">Nightly scan data URL (optional)</label>
+    <input id="nUrl" placeholder="Leave empty: uses this site's data/scan.json" autocomplete="off">
+    <p class="muted">Only needed if the app is hosted somewhere other than the GitHub repo that runs the nightly scan.</p>
     <label for="tdkey">Twelve Data API key (free at twelvedata.com) · moving averages, breakouts, volume</label>
     <input id="tdkey" type="password" placeholder="Paste key" autocomplete="off">
     <p class="muted">Free plan: 8 tickers a minute, 800 a day, so 40 tickers take about 5 minutes. History is cached for 6 hours, so re-scans the same day are quick. This runs alongside the Finnhub scan.</p>
@@ -300,7 +327,8 @@ header .hwrap{flex:1;min-width:0}
 
 <nav>
   <button class="on" data-t="t-scr" data-tip="Scan and rank your watchlist."><svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 15l4-5 3 3 5-6"/></svg>Screener</button>
-  <button data-t="t-etf" data-tip="Look up leveraged and inverse ETFs and their multiples. Works offline."><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Leveraged ETFs</button>
+  <button data-t="t-night" data-tip="Results of the nightly scan of your watchlist plus the whole US market: which stocks are READY after the last US close. Loads instantly, no keys needed."><svg viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>Nightly</button>
+  <button data-t="t-etf" data-tip="Look up leveraged and inverse ETFs and their multiples. Works offline."><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>ETFs</button>
   <button data-t="t-plan" data-tip="Work out entry, stop-loss, position size and exits for one ticker, and track saved plans."><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>Plan</button>
   <button data-t="t-set" data-tip="API keys, watchlist and score weights."><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Settings</button>
 </nav>
@@ -433,6 +461,7 @@ const W_LABEL = {grow:'Growth', mom:'Momentum', rs:'Rel. strength', vol:'Range /
 function loadSettings(){
   $('#key').value = LS.get('key','');
   $('#tdkey').value = LS.get('tdkey','');
+  $('#nUrl').value = LS.get('nurl','');
   $('#wl').value = LS.get('wl', DEFAULT_WL);
   const w = LS.get('w', DEFAULT_W);
   $('#wts').innerHTML = Object.keys(DEFAULT_W).map(k =>
@@ -441,7 +470,7 @@ function loadSettings(){
 function weights(){
   const w = {}; document.querySelectorAll('[data-w]').forEach(i => w[i.dataset.w] = Math.max(0, +i.value||0)); return w;
 }
-$('#saveBtn').onclick = () => { LS.set('key', $('#key').value.trim()); LS.set('tdkey', $('#tdkey').value.trim()); LS.set('wl', $('#wl').value); LS.set('w', weights()); rescore(); toast('Saved'); };
+$('#saveBtn').onclick = () => { LS.set('key', $('#key').value.trim()); LS.set('tdkey', $('#tdkey').value.trim()); LS.set('nurl', $('#nUrl').value.trim()); LS.set('wl', $('#wl').value); LS.set('w', weights()); rescore(); toast('Saved'); };
 $('#key').addEventListener('change', () => LS.set('key', $('#key').value.trim()));
 $('#tdkey').addEventListener('change', () => LS.set('tdkey', $('#tdkey').value.trim()));
 $('#resetWl').onclick = () => { $('#wl').value = DEFAULT_WL; LS.set('wl', DEFAULT_WL); toast('Watchlist reset'); };
@@ -1038,7 +1067,7 @@ $('#xlsBtn').onclick = () => {
 
 /* ---------- tabs ---------- */
 const TITLES = {'t-scr':['Doubling Screener','Rank stocks by potential to double in 3–12 months'],
-  't-etf':['Leveraged ETFs','Multiples and base index. Negative = inverse'], 't-set':['Settings','Key, watchlist and score weights'], 't-plan':['Trade Plan','Entry, stop-loss, size and exits for one ticker']};
+  't-etf':['Leveraged ETFs','Multiples and base index. Negative = inverse'], 't-set':['Settings','Key, watchlist and score weights'], 't-plan':['Trade Plan','Entry, stop-loss, size and exits for one ticker'], 't-night':['Nightly Scan','READY stocks after the last US close']};
 function switchTab(id){
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t.id===id));
   document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.t===id));
@@ -1314,6 +1343,118 @@ $('#bkFile').onchange = async e => {
   }catch(err){ $('#bkMsg').textContent = 'Import failed: ' + err.message; }
 };
 renderAbout();
+
+/* ---------- nightly scan (GitHub Actions → data/scan.json) ---------- */
+let night = LS.get('nightly', null), nFilter = 'ready';
+function nightUrls(){
+  const urls = [], o = LS.get('nurl','');
+  if (o) urls.push(o);
+  urls.push('data/scan.json');
+  const h = location.hostname;
+  if (h.endsWith('github.io')){
+    const owner = h.split('.')[0], repo = location.pathname.split('/').filter(Boolean)[0];
+    if (repo) urls.push(`https://raw.githubusercontent.com/${owner}/${repo}/HEAD/data/scan.json`);
+  }
+  return [...new Set(urls)];
+}
+async function loadNightly(){
+  $('#nReload').disabled = true;
+  const got = await Promise.all(nightUrls().map(u => fetch(u, {cache:'no-cache'}).then(r => r.ok ? r.json() : null).catch(() => null)));
+  const best = got.filter(j => j && j.stocks).sort((a,b) => (b.generated||'').localeCompare(a.generated||''))[0];
+  if (best){ night = best; try{ LS.set('nightly', best); }catch(e){} }
+  $('#nReload').disabled = false;
+  renderNightly();
+  if (!best && !night) toast('No nightly results found yet');
+}
+function nightRow(x){
+  const near = {sup: x.sup, res: x.res, supPct: x.sup ? x.sup.pct : null, resPct: x.res ? x.res.pct : null};
+  const tech = {trendPts:x.trendPts, a50:x.a50, r50:x.r50, a200:x.a200, r200:x.r200, s50:x.s50, s200:x.s200, ext:x.ext,
+                brk: x.brk, base: x.base, near, last: x.price, asOf: x.asOf};
+  const earn = x.earn ? (x.earn.none ? {none:true} : {date:x.earn.date, hour:''}) : null;
+  const b = x.brk;
+  const labels = [
+    'Uptrend 4/4 (above rising 50-day and 200-day)',
+    b && b.holding && b.volx >= VOL_X ? `Broke out ${b.daysAgo===0?'on the last trading day':b.daysAgo===1?'the day before the last close':'2 days before the last close'} above $${b.pivot.toFixed(2)} on ${b.volx.toFixed(1)}× volume` : 'Breakout on ≥1.5× volume in the last 3 days',
+    b ? `Price $${x.price.toFixed(2)} within buy zone (up to $${(b.pivot*1.05).toFixed(2)})` : 'Price within 5% of the breakout level',
+    `0–10% above the 50-day (now ${x.ext!=null ? (x.ext>=0?'+':'')+x.ext.toFixed(1)+'%' : 'n/a'})`,
+    x.earn ? (x.earn.none ? 'No earnings in the next months' : `Earnings in ${x.earn.days} days (needs more than 7)`) : 'Earnings date not checked',
+    `Market: ${night.market.state || 'unknown'}`
+  ];
+  return {t:x.t, price:x.price, dp:x.chg, tech, earn, rs: x.rs!=null ? {out:x.rs, newHigh:x.rsNewHigh} : null,
+          rdy: {ready:x.ready, half:x.half, passed:x.passed, checks: labels.map((l,i) => [l, x.checks[i]])}, raw:x};
+}
+function renderNightMarket(){
+  const m = night && night.market, el = $('#mktNight');
+  if (!m || !m.state){ el.className = 'mkt'; el.innerHTML = '<div class="hd"><b>Market: unknown</b></div>'; return; }
+  const st = {Uptrend:'up', Caution:'caution', Downtrend:'down'}[m.state];
+  const ok = v => v ? '✓' : '✗';
+  const line = (nm, x) => x ? `<b>${nm}</b> $${x.price.toFixed(2)} · ${x.ext>=0?'+':''}${x.ext.toFixed(1)}% vs 50d · above 50d ${ok(x.a50)} rising ${ok(x.r50)} · above 200d ${ok(x.a200)}` : '';
+  el.className = 'mkt ' + st;
+  el.innerHTML = `<div class="hd"><b>${MKT[st][0]}</b><span class="pill ${MKT[st][1]}">${m.sellingDays ?? '–'} selling days</span></div>
+    <div class="ix">${[line('SPY', m.indexes.SPY), line('QQQ', m.indexes.QQQ)].filter(Boolean).join('<br>')}</div>
+    <div class="adv">${MKT[st][2]}</div>`;
+}
+function renderNightly(){
+  if (!night){
+    $('#nInfo').textContent = 'No nightly results yet';
+    $('#nSub').textContent = 'Set up the GitHub workflow (see the setup guide), then run it once from the Actions tab.';
+    $('#nList').innerHTML = '<p class="empty">Nothing loaded. Tap Refresh after the first nightly run.</p>';
+    $('#mktNight').innerHTML = ''; $('#nStale').innerHTML = ''; return;
+  }
+  renderNightMarket();
+  const gen = new Date(night.generated), ageH = (Date.now() - gen) / 36e5;
+  $('#nInfo').textContent = `US close ${night.asOf} · ${night.counts.ready} READY`;
+  $('#nSub').textContent = `${night.scanned} stocks scanned (${night.universeName || (night.sp500 ? 'watchlist + S&P 500' : 'watchlist')}) · updated ${gen.toLocaleString()}${night.demo ? ' · TEST DATA' : ''}`;
+  $('#nStale').innerHTML = ageH > 80 ? `<p class="nstale">These results are ${Math.round(ageH/24)} days old. Check the repo's Actions tab: the nightly job may have failed or been paused.</p>` : '';
+  const rows = night.stocks.map(nightRow);
+  const cnt = {ready: rows.filter(r => r.raw.ready).length, near: rows.filter(r => !r.raw.ready && r.raw.passed >= 4).length,
+               setup: rows.filter(r => r.raw.setup === 4).length, watch: rows.filter(r => r.raw.watch).length, all: rows.length};
+  document.querySelectorAll('#nChips .chip').forEach(c => {
+    const k = c.dataset.n, base = {ready:'Ready', near:'Close', setup:'Setup 4/4', watch:'Watchlist', all:'All'}[k];
+    c.textContent = `${base} (${cnt[k]})`; c.classList.toggle('on', k === nFilter);
+  });
+  const q = $('#nQ').value.trim().toUpperCase();
+  let list = rows.filter(r => ({ready: r.raw.ready, near: !r.raw.ready && r.raw.passed >= 4, setup: r.raw.setup === 4, watch: r.raw.watch, all: true})[nFilter]);
+  if (q) list = rows.filter(r => r.t.includes(q));
+  if (!list.length){
+    $('#nList').innerHTML = nFilter === 'ready' && !q
+      ? `<p class="empty"><b>No stocks READY after the last close.</b> That is normal on most days.${cnt.near ? ` ${cnt.near} stock${cnt.near>1?'s are':' is'} close: tap <b>Close</b> to see them.` : ''}</p>`
+      : '<p class="empty">No matches.</p>';
+    return;
+  }
+  $('#nList').innerHTML = list.map(r => {
+    const x = r.raw;
+    return `<div class="res${x.ready ? ' isready' : ''}" data-ni="${x.t}">
+      <div class="score" style="border-color:${x.ready ? 'var(--acc)' : x.passed >= 4 ? 'var(--warn)' : 'var(--line)'}" data-tip="Checks passed out of 6. Tap the row for the list.">${x.passed}/6</div>
+      <div class="mid"><div class="t">${x.t}${x.watch ? '' : ' <span class="tag" data-tip="Found by the nightly whole-market scan; not in your scan watchlist.">Market</span>'}</div>${tagsHtml(r)}</div>
+      <div class="r"><div>$${x.price.toFixed(2)}</div><div class="${(x.chg||0)>=0?'up':'dn'}" style="font-size:12.5px">${pct(x.chg)}</div></div>
+      ${chartBtn(x.t)}
+    </div><div class="detail" id="nd-${x.t}"><div class="setup" style="margin-top:0;border-top:0">
+      <div><b>${x.ready ? (x.half ? '<span style="color:var(--warn)">READY · half size (market caution)</span>' : '<span class="up">READY to trade</span>') : `Not ready · ${x.passed} of 6 checks`}</b></div>
+      <div class="rlist">${r.rdy.checks.map(c => `<div>${c[1]===null ? '<span class="muted">?</span>' : c[1] ? '<span class="up">✓</span>' : '<span class="dn">✗</span>'} ${c[0]}</div>`).join('')}</div>
+      ${x.ready ? `<div>Suggested stop ≈ <b>$${x.stop.toFixed(2)}</b> (${((x.stop/x.price-1)*100).toFixed(1)}%) · buy zone up to <b>$${x.buyZoneTop.toFixed(2)}</b></div>` : ''}
+      ${x.sup || x.res ? `<div class="muted">${srText({sup:x.sup, res:x.res, supPct:x.sup?.pct, resPct:x.res?.pct})}</div>` : ''}
+      ${x.rs!=null ? `<div class="muted">RS vs S&amp;P ${x.rs>=0?'+':''}${x.rs.toFixed(0)}%${x.rsNewHigh ? ' · RS line at new high' : ''} · 50-day $${x.s50?.toFixed(2)} · data to ${x.asOf}</div>` : ''}
+      <div class="row" style="margin-top:6px">
+        <button class="btn ghost" data-plan="${x.t}" style="flex:1" data-tip="Open the Plan tab with live prices for ${x.t}.">Make trade plan</button>
+        ${parseWl().includes(x.t) ? '' : `<button class="btn ghost" data-addwl="${x.t}" data-tip="Add ${x.t} to the app's own watchlist for the Screener.">+ Watchlist</button>`}
+      </div></div></div>`;
+  }).join('');
+}
+$('#nReload').onclick = loadNightly;
+$('#nQ').addEventListener('input', renderNightly);
+$('#nChips').addEventListener('click', e => { const b = e.target.closest('.chip'); if (!b) return; nFilter = b.dataset.n; $('#nQ').value = ''; renderNightly(); });
+$('#nList').addEventListener('click', e => {
+  if (e.target.closest('button')) return;
+  const row = e.target.closest('.res[data-ni]'); if (row) document.getElementById('nd-'+row.dataset.ni).classList.toggle('on');
+});
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-addwl]'); if (!b) return;
+  const t = b.dataset.addwl, wl = $('#wl').value.trim();
+  $('#wl').value = wl + (wl ? ' ' : '') + t; LS.set('wl', $('#wl').value); b.remove(); toast(`${t} added to your watchlist`);
+});
+renderNightly();
+if (navigator.onLine) loadNightly();
 
 /* ---------- tooltips: long-press on touch, hover with a mouse ---------- */
 (() => {
